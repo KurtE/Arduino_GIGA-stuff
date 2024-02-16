@@ -1,3 +1,5 @@
+#include <elapsedMillis.h>
+
 REDIRECT_STDOUT_TO(Serial)
 #include "Arduino_GigaDisplay_GFX.h"
 #define GC9A01A_CYAN 0x07FF
@@ -23,8 +25,8 @@ uint16_t color565(uint8_t r, uint8_t g, uint8_t b) {
 
 //#include "OV7670/ov767x.h"
 
-//#define ARDUCAM_CAMERA_HM0360
-#define ARDUCAM_CAMERA_OV767X
+#define ARDUCAM_CAMERA_HM0360
+//#define ARDUCAM_CAMERA_OV767X
 #define CAMERA_WIDTH 640
 #define CAMERA_HEIGHT 480
 
@@ -103,7 +105,13 @@ void setup() {
   Serial.println("Before setBuffer");
   Serial.flush();
 
-  uint8_t *fb_mem = (uint8_t *)SDRAM.malloc(CAMERA_WIDTH * CAMERA_HEIGHT * 2 + 32);
+#if defined(ARDUCAM_CAMERA_HM01B0) || defined(ARDUCAM_CAMERA_HM0360)
+  //  uint8_t *fb_mem = (uint8_t *)SDRAM.malloc(CAMERA_WIDTH * CAMERA_HEIGHT * 2 + 32);
+  uint8_t *fb_mem = (uint8_t *)malloc(CAMERA_WIDTH * CAMERA_HEIGHT + 32);
+#else
+  //  uint8_t *fb_mem = (uint8_t *)SDRAM.malloc(CAMERA_WIDTH * CAMERA_HEIGHT * 2 + 32);
+  uint8_t *fb_mem = (uint8_t *)malloc(CAMERA_WIDTH * CAMERA_HEIGHT * 2 + 32);
+#endif
   fb.setBuffer((uint8_t *)ALIGN_PTR((uintptr_t)fb_mem, 32));
   printf("Frame buffer: %p\n", fb.getBuffer());
 
@@ -114,11 +122,14 @@ void setup() {
   display.setRotation(CANVAS_ROTATION);
   Serial.println("Before fillscreen");
   Serial.flush();
+  elapsedMicros em;
   display.fillScreen(GC9A01A_BLUE);
+  Serial.println(em, DEC);
   Serial.println("end setup");
   Serial.flush();
   pinMode(2, OUTPUT);
   pinMode(3, OUTPUT);
+  pinMode(4, OUTPUT);
 }
 
 #define HTONS(x) (((x >> 8) & 0x00FF) | ((x << 8) & 0xFF00))
@@ -126,13 +137,44 @@ void setup() {
 
 void writeRect8BPP(GigaDisplay_GFX *pdisp, int16_t x, int16_t y, const uint8_t bitmap[],
                    int16_t w, int16_t h, const uint16_t *palette) {
+  int display_width = 480;   // pdisp->WIDTH;
+  int display_height = 800;  //pdisp->HEIGHT;
+  uint16_t *display_buffer = pdisp->getBuffer();
+
   pdisp->startWrite();
+  // BUGBUG Assuming it will fit here and don't need to clip
+#if CANVAS_ROTATION == 1
+  // y = xIn ;  x = WIDTH - 1 - yIn
   for (int16_t j = 0; j < h; j++, y++) {
+    uint16_t *p = display_buffer + (x * display_width) + display_width - 1 - y;
     for (int16_t i = 0; i < w; i++) {
-      pdisp->writePixel(x + i, y, palette[bitmap[j * w + i]]);
+      *p = palette[*bitmap++];
+      p += display_width;
     }
   }
+#elif CANVAS_ROTATION == 3
+  // y = HEIGHT = 1 - xIn ;  x = yIn
+  uint16_t *p_row = display_buffer + ((display_height - 1 - x) * display_width);
+  for (int16_t j = 0; j < h; j++, y++) {
+    uint16_t *p = p_row + y;
+    for (int16_t i = 0; i < w; i++) {
+      *p = palette[*bitmap++];
+      p -= display_width;
+    }
+  }
+
+#else
+  for (int16_t j = 0; j < h; j++, y++) {
+    for (int16_t i = 0; i < w; i++) {
+      digitalWrite(4, HIGH);
+      pdisp->writePixel(x + i, y, palette[bitmap[j * w + i]]);
+      digitalWrite(4, LOW);
+    }
+  }
+#endif
+  digitalWrite(4, HIGH);
   pdisp->endWrite();
+  digitalWrite(4, LOW);
 }
 
 
@@ -145,14 +187,14 @@ void loop() {
 
     // We need to swap bytes.
     uint16_t *pixels = (uint16_t *)fb.getBuffer();
-  digitalWrite(3, HIGH);
+    digitalWrite(3, HIGH);
 #if defined(ARDUCAM_CAMERA_HM01B0) || defined(ARDUCAM_CAMERA_HM0360)
     writeRect8BPP(&display, (display.width() - CAMERA_WIDTH) / 2, (display.height() - CAMERA_HEIGHT) / 2, (uint8_t *)pixels, CAMERA_WIDTH, CAMERA_HEIGHT, palette);
 #else
     for (int i = 0; i < CAMERA_WIDTH * CAMERA_HEIGHT; i++) pixels[i] = HTONS(pixels[i]);
     display.drawRGBBitmap((display.width() - CAMERA_WIDTH) / 2, (display.height() - CAMERA_HEIGHT) / 2, pixels, CAMERA_WIDTH, CAMERA_HEIGHT);
 #endif
-  digitalWrite(3, LOW);
+    digitalWrite(3, LOW);
 
   } else {
     digitalWrite(2, LOW);
