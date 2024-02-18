@@ -25,10 +25,11 @@ uint16_t color565(uint8_t r, uint8_t g, uint8_t b) {
 
 //#include "OV7670/ov767x.h"
 
-#define ARDUCAM_CAMERA_HM0360
+#define ARDUCAM_CAMERA_HM01B0
+//#define ARDUCAM_CAMERA_HM0360
 //#define ARDUCAM_CAMERA_OV767X
-#define CAMERA_WIDTH 640
-#define CAMERA_HEIGHT 480
+#define CAMERA_WIDTH 320
+#define CAMERA_HEIGHT 240
 
 
 #ifdef ARDUCAM_CAMERA_HM01B0
@@ -106,11 +107,9 @@ void setup() {
   Serial.flush();
 
 #if defined(ARDUCAM_CAMERA_HM01B0) || defined(ARDUCAM_CAMERA_HM0360)
-  //  uint8_t *fb_mem = (uint8_t *)SDRAM.malloc(CAMERA_WIDTH * CAMERA_HEIGHT * 2 + 32);
-  uint8_t *fb_mem = (uint8_t *)malloc(CAMERA_WIDTH * CAMERA_HEIGHT + 32);
+  uint8_t *fb_mem = (uint8_t *)SDRAM.malloc(CAMERA_WIDTH * CAMERA_HEIGHT * 2 + 32);
 #else
-  //  uint8_t *fb_mem = (uint8_t *)SDRAM.malloc(CAMERA_WIDTH * CAMERA_HEIGHT * 2 + 32);
-  uint8_t *fb_mem = (uint8_t *)malloc(CAMERA_WIDTH * CAMERA_HEIGHT * 2 + 32);
+  uint8_t *fb_mem = (uint8_t *)SDRAM.malloc(CAMERA_WIDTH * CAMERA_HEIGHT * 2 + 32);
 #endif
   fb.setBuffer((uint8_t *)ALIGN_PTR((uintptr_t)fb_mem, 32));
   printf("Frame buffer: %p\n", fb.getBuffer());
