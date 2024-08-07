@@ -135,6 +135,15 @@ void loop() {
   float fps = (3000000.0 / elapsed_sum);
   Serial.print(" fps:");
   Serial.println(fps, 2);
+  display.fillScreen(GC9A01A_RED);
+  display.drawRect(0, 0, display.width(), display.height(), GC9A01A_WHITE);
+  display.drawLine(0, 0, display.width()-1, display.height() - 1, GC9A01A_GREEN);
+  display.drawLine(0,  display.height() - 1, display.width()-1, 0, GC9A01A_GREEN);
+  display.setCursor(5, 5);
+  display.setTextSize(2);
+  display.print(screen_rotation);
+  delay(1000);  
+
   if (Serial.available()) {
     while (Serial.read() != -1) {}
     Serial.println("Paused");
