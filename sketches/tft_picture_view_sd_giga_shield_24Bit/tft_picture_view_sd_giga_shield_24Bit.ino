@@ -16,7 +16,6 @@
 #include "SDRAM.h"
 
 #include <elapsedMillis.h>
-#include <GIGA_digitalWriteFast.h>
 
 #include "WrapperFile.h"
 
