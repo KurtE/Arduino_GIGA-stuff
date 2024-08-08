@@ -21,6 +21,7 @@
 
 #include "Arduino_H7_Video.h"
 #include "ArduinoGraphics.h"
+#include "Arduino_H7_Video_Plus.h"
 
 #define MAX_FILENAME_LEN 256
 
@@ -60,7 +61,7 @@ REDIRECT_STDOUT_TO(Serial)
 //-----------------------------------------------------------------------------
 // displays
 //-----------------------------------------------------------------------------
-Arduino_H7_Video Display(800, 480, GigaDisplayShield);
+Arduino_H7_Video_Plus Display(800, 480, GigaDisplayShield);
 
 //-----------------------------------------------------------------------------
 // Some common things.
@@ -273,6 +274,14 @@ void setup(void) {
     //    tft.setTextColor(RED, WHITE);
     //    tft.setCursor(1, 1);
     //    tft.print("Waiting for SD or USB");
+    Display.beginDraw();
+    fillScreen(0, 0, 0xff, false);
+    Display.textFont(Font_5x7);
+    Display.textSize(5, 5);
+    Display.stroke(0xff, 0, 0);
+    Display.background(0, 0, 0xff);
+    Display.text("Waiting for SD or USB", 0, 0);
+    Display.endDraw();
     elapsedMillis em;
     while (!g_devices_started || (em < 3000)) {
         if (g_devices_started == ALL_STARTED) break;
@@ -281,9 +290,9 @@ void setup(void) {
             Serial.println("calling SDBEGIN");
             if (SD.begin(SD_CONFIG)) {
                 g_devices_started |= SD_DRIVE;
-                //tft.setCursor(1, 40);
-                //tft.setTextColor(RED, WHITE);
-                //tft.println("SD Started");
+                //Display.beginDraw();
+                Display.text("SD Started", 100, 100);
+                Display.endDraw();
                 if (!root_SD.open("/")) {
                     //tft.print("Failed to open root_SD directory");
                 }
@@ -314,6 +323,9 @@ void setup(void) {
             if (msd.connected()) {
                 if (usb.mount(&msd) == 0) {
                     g_devices_started |= USB_DRIVE;
+                    //Display.beginDraw();
+                    Display.text("USB Started", 100, 200);
+                    Display.endDraw();
                     //tft.setCursor(1, 140);
                     //tft.setTextColor(RED, WHITE);
                     //tft.println("USB Started");

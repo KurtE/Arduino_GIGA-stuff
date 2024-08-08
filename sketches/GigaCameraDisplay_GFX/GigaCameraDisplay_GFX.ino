@@ -24,8 +24,10 @@ uint16_t color565(uint8_t r, uint8_t g, uint8_t b) {
 //#define ARDUCAM_CAMERA_HM01B0
 
 //#include "OV7670/ov767x.h"
+//#define ROTATE_CAMERA_IMAGE
 
-#define ARDUCAM_CAMERA_HM01B0
+#define ARDUCAM_CAMERA_GC2145
+//#define ARDUCAM_CAMERA_HM01B0
 //#define ARDUCAM_CAMERA_HM0360
 //#define ARDUCAM_CAMERA_OV767X
 #define CAMERA_WIDTH 320
@@ -48,16 +50,19 @@ Camera cam(himax);
 
 #elif defined(ARDUCAM_CAMERA_OV767X)
 #include "OV7670/ov767x.h"
-#warning OV767x
 // OV7670 ov767x;
 OV7675 ov767x;
 Camera cam(ov767x);
 #define IMAGE_MODE CAMERA_RGB565
+#ifdef ROTATE_CAMERA_IMAGE
+#define CANVAS_ROTATION 0
+#else
 #define CANVAS_ROTATION 1
+#endif
 
 #elif defined(ARDUCAM_CAMERA_GC2145)
 #include "GC2145/gc2145.h"
-#define CANVAS_ROTATION 1
+#define CANVAS_ROTATION 0
 GC2145 galaxyCore;
 Camera cam(galaxyCore);
 #define IMAGE_MODE CAMERA_RGB565
@@ -66,6 +71,10 @@ Camera cam(galaxyCore);
 // The buffer used to capture the frame
 FrameBuffer fb;
 uint16_t palette[256];
+
+#ifdef ROTATE_CAMERA_IMAGE
+uint16_t *rotate_buffer = nullptr;
+#endif
 
 
 // The buffer used to rotate and resize the frame
@@ -89,6 +98,7 @@ void setup() {
   SDRAM.begin();
   Serial.println("Before camera start");
   Serial.flush();
+  cam.debug(Serial);
 #if CAMERA_WIDTH == 640
   if (!cam.begin(CAMERA_R640x480, IMAGE_MODE, 15)) {
     blinkLED();
@@ -98,6 +108,26 @@ void setup() {
     blinkLED();
   }
 #endif
+
+#if defined(ARDUCAM_CAMERA_HM0360) || defined(ARDUCAM_CAMERA_HM01B0)
+  himax.printRegs();
+#elif defined(ARDUCAM_CAMERA_OV767X)
+  ov767x.printRegs();
+#endif
+  // lets try printing out DCMI as well
+  Serial.println("\nDCMI registers: ");
+  printf("\tCR:%08X\n", DCMI->CR);
+  printf("\tSR:%08X\n", DCMI->SR);
+  printf("\tRISR:%08X\n", DCMI->RISR);
+  printf("\tIER:%08X\n", DCMI->IER);
+  printf("\tMISR:%08X\n", DCMI->MISR);
+  printf("\tICR:%08X\n", DCMI->ICR);
+  printf("\tESCR:%08X\n", DCMI->ESCR);
+  printf("\tESUR:%08X\n", DCMI->ESUR);
+  printf("\tCWSTRTR:%08X\n", DCMI->CWSTRTR);
+  printf("\tCWSIZER:%08X\n", DCMI->CWSIZER);
+  printf("\tDR:%08X\n", DCMI->DR);
+
   // Setup the palette to convert 8 bit greyscale to 32bit greyscale
   for (int i = 0; i < 256; i++) {
     palette[i] = color565(i, i, i);
@@ -107,10 +137,15 @@ void setup() {
   Serial.flush();
 
 #if defined(ARDUCAM_CAMERA_HM01B0) || defined(ARDUCAM_CAMERA_HM0360)
-  uint8_t *fb_mem = (uint8_t *)SDRAM.malloc(CAMERA_WIDTH * CAMERA_HEIGHT * 2 + 32);
+  uint8_t *fb_mem = (uint8_t *)SDRAM.malloc(CAMERA_WIDTH * CAMERA_HEIGHT + 32);
 #else
   uint8_t *fb_mem = (uint8_t *)SDRAM.malloc(CAMERA_WIDTH * CAMERA_HEIGHT * 2 + 32);
 #endif
+#ifdef ROTATE_CAMERA_IMAGE
+  rotate_buffer = (uint16_t *)SDRAM.malloc(CAMERA_WIDTH * CAMERA_HEIGHT);
+  printf("Rotate buffer: %p\n", rotate_buffer);
+#endif
+
   fb.setBuffer((uint8_t *)ALIGN_PTR((uintptr_t)fb_mem, 32));
   printf("Frame buffer: %p\n", fb.getBuffer());
 
@@ -131,7 +166,10 @@ void setup() {
   pinMode(4, OUTPUT);
 }
 
-#define HTONS(x) (((x >> 8) & 0x00FF) | ((x << 8) & 0xFF00))
+inline uint16_t HTONS(uint16_t x) {
+  return ((x >> 8) & 0x00FF) | ((x << 8) & 0xFF00);
+}
+//#define HTONS(x) (((x >> 8) & 0x00FF) | ((x << 8) & 0xFF00))
 
 
 void writeRect8BPP(GigaDisplay_GFX *pdisp, int16_t x, int16_t y, const uint8_t bitmap[],
@@ -176,6 +214,21 @@ void writeRect8BPP(GigaDisplay_GFX *pdisp, int16_t x, int16_t y, const uint8_t b
   digitalWrite(4, LOW);
 }
 
+#ifdef ROTATE_CAMERA_IMAGE
+void rotate_rgb_camera_image(uint16_t *pixels, uint16_t *rotated_pixels) {
+  for (int y = 0; y < CAMERA_HEIGHT; y++) {
+    //uint16_t *prp = rotated_pixels + y - 1; // 0-> last column
+    for (int x = 0; x < CAMERA_WIDTH; x++) {
+      //*prp = HTONS(*pixels++);
+      rotated_pixels[(CAMERA_WIDTH - 1 - x) * CAMERA_HEIGHT + y] = HTONS(*pixels++);
+      //prp += CAMERA_HEIGHT;
+    }
+  }
+}
+#endif
+
+uint32_t display_time_sum = 0;
+uint8_t display_time_count = 0;
 
 void loop() {
 
@@ -184,16 +237,52 @@ void loop() {
   if (cam.grabFrame(fb, 3000) == 0) {
     digitalWrite(2, LOW);
 
+    static bool print_once = true;
+    if (print_once) {
+      print_once = false;
+      Serial.println("\nDCMI registers: ");
+      printf("\tCR:%08X\n", DCMI->CR);
+      printf("\tSR:%08X\n", DCMI->SR);
+      printf("\tRISR:%08X\n", DCMI->RISR);
+      printf("\tIER:%08X\n", DCMI->IER);
+      printf("\tMISR:%08X\n", DCMI->MISR);
+      printf("\tICR:%08X\n", DCMI->ICR);
+      printf("\tESCR:%08X\n", DCMI->ESCR);
+      printf("\tESUR:%08X\n", DCMI->ESUR);
+      printf("\tCWSTRTR:%08X\n", DCMI->CWSTRTR);
+      printf("\tCWSIZER:%08X\n", DCMI->CWSIZER);
+      printf("\tDR:%08X\n", DCMI->DR);
+    }
+
     // We need to swap bytes.
     uint16_t *pixels = (uint16_t *)fb.getBuffer();
     digitalWrite(3, HIGH);
+    elapsedMicros emDisplay;
 #if defined(ARDUCAM_CAMERA_HM01B0) || defined(ARDUCAM_CAMERA_HM0360)
     writeRect8BPP(&display, (display.width() - CAMERA_WIDTH) / 2, (display.height() - CAMERA_HEIGHT) / 2, (uint8_t *)pixels, CAMERA_WIDTH, CAMERA_HEIGHT, palette);
+#elif defined(ROTATE_CAMERA_IMAGE)
+    rotate_rgb_camera_image(pixels, rotate_buffer);
+    display.drawRGBBitmap((display.width() - CAMERA_HEIGHT) / 2, (display.height() - CAMERA_WIDTH) / 2, rotate_buffer, CAMERA_HEIGHT, CAMERA_WIDTH);
+    static uint8_t debug_out_count = 4;
+    if (debug_out_count) {
+      printf("DRAWRGB (%d, %d, %p, %u, %u)\n", (display.width() - CAMERA_HEIGHT) / 2, (display.height() - CAMERA_WIDTH) / 2, rotate_buffer, CAMERA_HEIGHT, CAMERA_WIDTH);
+      debug_out_count--;
+    }
 #else
     for (int i = 0; i < CAMERA_WIDTH * CAMERA_HEIGHT; i++) pixels[i] = HTONS(pixels[i]);
     display.drawRGBBitmap((display.width() - CAMERA_WIDTH) / 2, (display.height() - CAMERA_HEIGHT) / 2, pixels, CAMERA_WIDTH, CAMERA_HEIGHT);
 #endif
     digitalWrite(3, LOW);
+    display_time_sum += emDisplay;
+    display_time_count++;
+    if (display_time_count == 128) {
+      Serial.print("Avg display Time: ");
+      Serial.print(display_time_sum / display_time_count);
+      Serial.print(" fps:");
+      Serial.println(128000000.0 / float(display_time_sum), 2);
+      display_time_sum = 0;
+      display_time_count = 0;
+    }
 
   } else {
     digitalWrite(2, LOW);
