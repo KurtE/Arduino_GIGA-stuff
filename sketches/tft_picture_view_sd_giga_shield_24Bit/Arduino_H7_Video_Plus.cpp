@@ -34,7 +34,7 @@ void Arduino_H7_Video_Plus::background(uint32_t color) {
 
 
 
-void Arduino_H7_Video_Plus::textSize(uint8_t xs, uint8_t ys) {
+void Arduino_H7_Video_Plus::setTextSize(uint8_t xs, uint8_t ys) {
     _xTextScale = xs;
     _yTextScale = ys ? ys : xs;
 }

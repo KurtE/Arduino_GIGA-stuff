@@ -16,7 +16,7 @@ class Arduino_H7_Video_Plus : public Arduino_H7_Video {
     virtual void text(const char* str, int x = 0, int y = 0);
     virtual void textFont(const Font& which);
 
-    void textSize(uint8_t xs = 1, uint8_t ys = 0);
+    void setTextSize(uint8_t xs = 1, uint8_t ys = 0);
     void stroke(uint8_t r, uint8_t g, uint8_t b);
     void stroke(uint32_t color);
     void background(uint8_t r, uint8_t g, uint8_t b);

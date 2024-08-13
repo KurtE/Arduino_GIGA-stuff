@@ -21,7 +21,7 @@
 
 #include "Arduino_H7_Video.h"
 #include "ArduinoGraphics.h"
-#include "Arduino_H7_Video_Plus.h"
+//#include "Arduino_H7_Video_Plus.h"
 
 #define MAX_FILENAME_LEN 256
 
@@ -61,7 +61,8 @@ REDIRECT_STDOUT_TO(Serial)
 //-----------------------------------------------------------------------------
 // displays
 //-----------------------------------------------------------------------------
-Arduino_H7_Video_Plus Display(800, 480, GigaDisplayShield);
+//Arduino_H7_Video_Plus Display(800, 480, GigaDisplayShield);
+Arduino_H7_Video Display(800, 480, GigaDisplayShield);
 
 //-----------------------------------------------------------------------------
 // Some common things.
@@ -201,12 +202,8 @@ uint8_t g_current_device = 0;
 void fillScreen(uint8_t r, uint8_t g, uint8_t b, bool begin_end = true) {
     if (begin_end) Display.beginDraw();
 
-    //Display.background(r, g, b);
-    for (int y = 0; y < Display.height(); y++) {
-        for (int x = 0; x < Display.width(); x++) {
-            Display.set(x, y, r, g, b);
-        }
-    }
+    Display.background(r, g, b);
+    Display.clear();
     if (begin_end) Display.endDraw();
 }
 
@@ -274,14 +271,7 @@ void setup(void) {
     //    tft.setTextColor(RED, WHITE);
     //    tft.setCursor(1, 1);
     //    tft.print("Waiting for SD or USB");
-    Display.beginDraw();
-    fillScreen(0, 0, 0xff, false);
-    Display.textFont(Font_5x7);
-    Display.textSize(5, 5);
-    Display.stroke(0xff, 0, 0);
-    Display.background(0, 0, 0xff);
-    Display.text("Waiting for SD or USB", 0, 0);
-    Display.endDraw();
+    show_updated_startup_status();
     elapsedMillis em;
     while (!g_devices_started || (em < 3000)) {
         if (g_devices_started == ALL_STARTED) break;
@@ -290,13 +280,11 @@ void setup(void) {
             Serial.println("calling SDBEGIN");
             if (SD.begin(SD_CONFIG)) {
                 g_devices_started |= SD_DRIVE;
-                //Display.beginDraw();
-                Display.text("SD Started", 100, 100);
-                Display.endDraw();
+                show_updated_startup_status();
                 if (!root_SD.open("/")) {
                     //tft.print("Failed to open root_SD directory");
                 }
-                Serial.print("SD Started");
+                Serial.println("SD Started");
                 em = 0;
             }
         }
@@ -321,14 +309,10 @@ void setup(void) {
                 if (msd.connect()) Serial.println("MSD Connect");
             }
             if (msd.connected()) {
+                Serial.println("Try to mount USB device");
                 if (usb.mount(&msd) == 0) {
                     g_devices_started |= USB_DRIVE;
-                    //Display.beginDraw();
-                    Display.text("USB Started", 100, 200);
-                    Display.endDraw();
-                    //tft.setCursor(1, 140);
-                    //tft.setTextColor(RED, WHITE);
-                    //tft.println("USB Started");
+                    show_updated_startup_status();
                     root_USB = opendir("/usb/");
                     Serial.print("USB Started");
                     em = 0;
@@ -400,6 +384,28 @@ void setup(void) {
 #endif
     }
     ShowAllOptionValues();
+}
+
+void show_updated_startup_status() {
+    Display.beginDraw();
+    fillScreen(0, 0, 0xff, false);
+    Display.textFont(Font_5x7);
+    //Display.textSize(5, 5);
+    Display.setTextSize(5);
+    Display.stroke(0xff, 0, 0);
+    Display.background(0, 0, 0xff);
+    Display.text("Waiting for SD or USB", 0, 0);
+
+    if (g_devices_started & SD_DRIVE) {
+        Display.text("SD Started", 100, 100);
+    }
+
+    if (g_devices_started & USB_DRIVE) {
+        Display.text("USB Started", 100, 200);
+    }
+
+    Display.endDraw();
+
 }
 
 //****************************************************************************
@@ -639,6 +645,10 @@ void writeClippedRect24(int16_t x, int16_t y, int16_t cx, int16_t cy, uint32_t *
     //Image img(ENCODING_RGB24, (uint8_t *)pixels, cx, cy);
     y += g_image_offset_y;
     x += g_image_offset_x;
+#if 0
+    Image img(ENCODING_RGB, (uint8_t *)pixels, cx, cy);
+    Display.image(img, x, y, cx, cy);
+#else
     //Display.image(img, x, y);
     for (int16_t iy = y; iy < (y + cy); iy++) {
         for (int16_t ix = x; ix < (x + cx); ix++) {
@@ -646,6 +656,7 @@ void writeClippedRect24(int16_t x, int16_t y, int16_t cx, int16_t cy, uint32_t *
             Display.set(ix, iy, color >> 16, color >> 8, color);
         }
     }
+#endif    
 }
 
 
@@ -1657,7 +1668,7 @@ void processPNGFile(WrapperFile &pngFile, const char *name, bool fErase) {
         Serial.print(", ");
         Serial.print(g_image_offset_y);
         Serial.println(")");
-        uint16_t *usPixels = (uint16_t *)malloc(g_image_width * ((g_image_scale == 1) ? 16 : g_image_scale) * sizeof(uint16_t));
+        uint16_t *usPixels = (uint16_t *)malloc(g_image_width * ((g_image_scale == 1) ? 16 : g_image_scale) * sizeof(uint32_t));
         if (usPixels) {
             rc = png.decode(usPixels, 0);
             png.close();
