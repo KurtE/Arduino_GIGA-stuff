@@ -392,7 +392,7 @@ void show_updated_startup_status() {
     fillScreen(0, 0, 0xff, false);
     Display.textFont(Font_5x7);
     //Display.textSize(5, 5);
-    Display.setTextSize(5);
+    Display.textSize(5);
     Display.stroke(0xff, 0, 0);
     Display.background(0, 0, 0xff);
     Display.text("Waiting for SD or USB", 0, 0);
