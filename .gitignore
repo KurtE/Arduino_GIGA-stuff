@@ -1,3 +1,5 @@
 
 *.json
 Documents/~$Arduino_GIGA_R1_pins.xlsx
+libraries/GIGA_SoftwareSerial/GIGA_SoftwareSerial.sublime-workspace
+libraries/GIGA_SoftwareSerial/GIGA_SoftwareSerial.sublime-project

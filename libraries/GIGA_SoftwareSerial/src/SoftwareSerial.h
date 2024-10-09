@@ -11,6 +11,7 @@ Multi-instance software serial library for Arduino/Wiring
 -- Pin change interrupt macros by Paul Stoffregen (http://www.pjrc.com)
 -- 20MHz processor support by Garrett Mace (http://www.macetech.com)
 -- ATmega1280/2560 support by Brett Hagman (http://www.roguerobotics.com/)
+-- Giga version by: KurtE
 
 This library is free software; you can redistribute it and/or
 modify it under the terms of the GNU Lesser General Public
@@ -41,6 +42,11 @@ http://arduiniana.org.
 #include "pinDefinitions.h"
 #include "mbed.h"
 
+#define USE_GIGA_PORTENTA_H7_INTERRUPT
+#ifdef USE_GIGA_PORTENTA_H7_INTERRUPT
+#include <Portenta_H7_TimerInterrupt.h>
+#endif
+
 using namespace std::chrono_literals;
 using namespace std::chrono;
 
@@ -57,7 +63,12 @@ using namespace std::chrono;
 #if defined(ARDUINO_GIGA)
 class SoftwareSerial : public Stream {
   public:
+#ifdef USE_GIGA_PORTENTA_H7_INTERRUPT
+    // need to see what works well for a timer here...
+    SoftwareSerial(uint8_t rxPin, uint8_t txPin, bool inverse_logic = false, TIM_TypeDef* timer=TIM15);
+#else
     SoftwareSerial(uint8_t rxPin, uint8_t txPin, bool inverse_logic = false);
+#endif    
     ~SoftwareSerial() {
         end();
     }
@@ -82,6 +93,9 @@ class SoftwareSerial : public Stream {
     operator bool() {
         return true;
     }
+
+    void setDebugStream(Stream *pstream) {_debug_stream = pstream;} 
+
     using Print::write;
   private:
     HardwareSerial *port;
@@ -112,11 +126,16 @@ class SoftwareSerial : public Stream {
     void start_bit_begin();
     void data_bit_sample();
     mbed::InterruptIn *rx_int;
+#ifdef USE_GIGA_PORTENTA_H7_INTERRUPT
+    Portenta_H7_Timer rx_timer;
+#else
     mbed::Ticker ticker; // calls a callback repeatedly with a timeout
+#endif
     //IntervalTimer data_bit_timer;
     uint16_t rx_head;
     uint16_t rx_tail;
     uint8_t rx_buffer[_SS_MAX_RX_BUFF];
+    Stream *_debug_stream = &Serial; // by default
 };
 
 

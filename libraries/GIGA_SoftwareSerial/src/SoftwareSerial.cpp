@@ -34,15 +34,8 @@ http://arduiniana.org.
 // the bit times, so don't rely on it too much at high baud rates
 #define _DEBUG 1
 #define _DEBUG_PIN_RX 11
+#define _DEBUG_PIN_RX_PISR 12
 #define _DEBUG_PIN_TX 13
-#if _DEBUG
-#include <GIGA_digitalWriteFast.h>
-#define DBGdigitalWrite digitalWriteFast
-#define DBGdigitalToggle digitalToggleFast
-#else
-inline void DBGdigitalWrite(uint8_t pin, uint8_t val) {}
-inline void DBGdigitalToggle(uint8_t pin) {} 
-#endif
 //
 // Includes
 //
@@ -51,19 +44,37 @@ inline void DBGdigitalToggle(uint8_t pin) {}
 #include <Arduino.h>
 #include "SoftwareSerial.h"
 
+#if _DEBUG
+#include <GIGA_digitalWriteFast.h>
+#define DBGdigitalWrite digitalWriteFast
+#define DBGdigitalToggle digitalToggleFast
+#else
+inline void DBGdigitalWrite(uint8_t pin, uint8_t val) {}
+inline void DBGdigitalToggle(uint8_t pin) {} 
+#endif
+
+
 
 //#if defined(__MK20DX128__) || defined(__MK20DX256__) || defined(__MKL26Z64__) || defined(__MK64FX512__) || defined(__MK66FX1M0__) || defined(__IMXRT1052__) || defined(__IMXRT1062__)
 #if defined(ARDUINO_GIGA)
 
 // BUGBUG = need to check which core.
-#define F_CPU 480000000ul
+static uint32_t F_CPU = 480000000ul;
 
 #if !_DEBUG
 // same table in the GIGA_digitalWriteFast.h
 static  GPIO_TypeDef * const port_table[] = { GPIOA, GPIOB, GPIOC, GPIOD, GPIOE, GPIOF, GPIOG, GPIOH, GPIOI, GPIOJ, GPIOK };
 #endif
 
+#ifdef USE_GIGA_PORTENTA_H7_INTERRUPT
+    // need to see what works well for a timer here...
+SoftwareSerial::SoftwareSerial(uint8_t rxPin, uint8_t txPin, bool inverse_logic, TIM_TypeDef* timer) :
+    rx_timer(timer) {
+                
+#else
 SoftwareSerial::SoftwareSerial(uint8_t rxPin, uint8_t txPin, bool inverse_logic /* = false */) {
+#endif
+
     buffer_overflow = false;
 
     port = NULL;
@@ -88,10 +99,12 @@ void SoftwareSerial::begin(unsigned long speed) {
     } else {
         rx_head = 0;
         rx_tail = 0;
+        if (HAL_GetCurrentCPUID() != CM7_CPUID) F_CPU = 240000000ul;
+
         cycles_per_bit = (uint32_t)(F_CPU + speed / 2) / speed;
         microseconds_per_bit = (float)cycles_per_bit / (float)(F_CPU / 1000000);
         // TODO: latency estimate could be better tuned to each board
-        const float latency = 900.0f / (float)(F_CPU / 1000000);
+        const float latency = 13.0f; // 900.0f / (float)(F_CPU / 1000000);
         microseconds_start = microseconds_per_bit * 1.5f - latency;
         uint32_t core_debug = CoreDebug->DEMCR;
         CoreDebug->DEMCR = core_debug | CoreDebug_DEMCR_TRCENA_Msk;
@@ -104,12 +117,33 @@ void SoftwareSerial::begin(unsigned long speed) {
 // lets try to turn of RX to start        
         attachInterrupt(digitalPinToInterrupt(rxpin), start_bit_falling_edge, FALLING);
         rx_int = digitalPinToInterruptObj(rxpin);
+
+        active_object = nullptr;
+        // Hacking. 
+        if (_debug_stream) {
+            rx_timer.hwtimer()->setOverflow(microseconds_per_bit, MICROSEC_FORMAT);
+            _debug_stream->print("Baud: "); _debug_stream->print(speed);
+            _debug_stream->print(" Ticks: "); 
+            _debug_stream->print(rx_timer.hwtimer()->getOverflow());        
+            rx_timer.hwtimer()->setOverflow(microseconds_start, MICROSEC_FORMAT);
+            _debug_stream->print(" Ticks start: "); 
+            _debug_stream->println(rx_timer.hwtimer()->getOverflow());        
+            //_debug_stream->printf("begin bitbang, rxpin=%u, txpin=%u\n", rxpin, txpin);
+            _debug_stream->print("rx_timer freq: ");
+            _debug_stream->println(rx_timer.hwtimer()->getTimerClkFreq());
+
+            _debug_stream->print("HAL Current CPU ID: 0x");
+            _debug_stream->println(HAL_GetCurrentCPUID(), HEX);
+
+        }
+
         active_object = this;
-        //Serial.printf("begin bitbang, rxpin=%u, txpin=%u\n", rxpin, txpin);
+        rx_timer.hwtimer()->setPreloadEnable(0); // turn off the buffering...
     }
 
 #if _DEBUG
     pinMode(_DEBUG_PIN_RX, OUTPUT);
+    pinMode(_DEBUG_PIN_RX_PISR, OUTPUT);
     pinMode(_DEBUG_PIN_TX, OUTPUT);
 #endif    
 }
@@ -121,7 +155,11 @@ void SoftwareSerial::end() {
     } else {
         active_object = NULL;
         detachInterrupt(rxpin);
+#ifdef USE_GIGA_PORTENTA_H7_INTERRUPT
+        rx_timer.detachInterrupt();
+#else        
         ticker.detach();
+#endif        
         pinMode(txpin, INPUT);
         pinMode(rxpin, INPUT);
     }
@@ -152,10 +190,10 @@ static void wait_for_target(uint32_t begin, uint32_t target) {
 }
 
 size_t SoftwareSerial::write(uint8_t b) {
-    //Serial.print("Write: ");
-    //Serial.print(b, HEX);
-    //Serial.print("C PB: ");
-    //Serial.println(cycles_per_bit);
+    //_debug_stream->print("Write: ");
+    //_debug_stream->print(b, HEX);
+    //_debug_stream->print("C PB: ");
+    //_debug_stream->println(cycles_per_bit);
 
     uint32_t target;
     uint8_t mask;
@@ -210,13 +248,21 @@ void SoftwareSerial::data_bit_sampling_timer() {
 
 void SoftwareSerial::start_bit_begin() {
     //digitalWriteFast(12, HIGH);
-//    DBGdigitalToggle(_DEBUG_PIN_RX);
+    DBGdigitalToggle(_DEBUG_PIN_RX_PISR);
+    DBGdigitalWrite(_DEBUG_PIN_RX, HIGH);
     //ticker.attach(mbed::callback(this, &SoftwareSerial::data_bit_sample, std::chrono::microseconds(ms_per_bit))); 
     rx_int->disable_irq();
     rxcount = 0;
     rxbyte = 0;
     uint32_t ms_start = microseconds_start;
+#ifdef USE_GIGA_PORTENTA_H7_INTERRUPT
+    rx_timer.setInterval(ms_start, &data_bit_sampling_timer);
+    // see if it sets up the 2nd time interval
+    //rx_timer.enableTimer();
+#else
     ticker.attach(mbed::callback(this, &SoftwareSerial::data_bit_sample), std::chrono::microseconds(ms_start)); 
+#endif    
+    DBGdigitalWrite(_DEBUG_PIN_RX, LOW);
 /*
     if (data_bit_timer.begin(data_bit_sampling_timer, microseconds_start)) {
         data_bit_timer.update(microseconds_per_bit);
@@ -239,11 +285,17 @@ void SoftwareSerial::data_bit_sample() {
     rxcount = rxcount + 1;
     if (rxcount == 1) {
         // update the time interval
+#ifdef USE_GIGA_PORTENTA_H7_INTERRUPT
+        rx_timer.setInterval(microseconds_per_bit, &data_bit_sampling_timer);
+#else
+        //rx_timer.setInterval(ms_per_bit, &data_bit_sampling_timer);
         ticker.detach();
         uint32_t ms_per_bit = microseconds_per_bit;
         ticker.attach(mbed::callback(this, &SoftwareSerial::data_bit_sample), std::chrono::microseconds(ms_per_bit)); 
+#endif        
+    }
 
-    } else if (rxcount == 8) {  // last data bit
+    if (rxcount == 8) {  // last data bit
         uint16_t head = rx_head + 1;
         if (head >= _SS_MAX_RX_BUFF) head = 0;
         if (head != rx_tail) {
@@ -252,7 +304,11 @@ void SoftwareSerial::data_bit_sample() {
         }
     }
     else if (rxcount >= 9) {  // stop bit
+#ifdef USE_GIGA_PORTENTA_H7_INTERRUPT
+    rx_timer.disableTimer();
+#else        
         ticker.detach();
+#endif
         //attachInterrupt(digitalPinToInterrupt(rxpin), start_bit_falling_edge, FALLING);
         rx_int->enable_irq();
     }
