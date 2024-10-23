@@ -205,12 +205,27 @@ void debug_printf(Stream *pstream, const char *format, ...) {
 
 int OV5640::init()
 {
+    int ret = 0;
+    int ret1 = 0;
+
+    debug_printf(_debug, "\nOV5640::init called\n");
     _i2c->begin();
     _i2c->setClock(400000);
 
-    int ret = 0;
-    int ret1 = 0;
-    reset();
+    readout_x = 0;
+    readout_y = 0;
+
+    readout_w = ACTIVE_SENSOR_WIDTH;
+    readout_h = ACTIVE_SENSOR_HEIGHT;
+
+    hts_target = 0;
+
+    // Reset all registers
+    ret |= cameraWriteRegister(SCCB_SYSTEM_CTRL_1, 0x11);
+    ret |= cameraWriteRegister(SYSTEM_CTROL0, 0x82);
+
+    // Delay 5 ms
+    delay(5);
 
     // Write default registers
     for (int i = 0; default_regs[i][0]; i++) {
@@ -222,7 +237,7 @@ int OV5640::init()
 
     if (_useAF) {
         cameraWriteRegister(SYSTEM_RESET_00, 0x20);
-        _debug->println(".... Loading firmware....");
+        if (_debug) _debug->println(".... Loading firmware....");
         // Write firmware
 
         for (uint16_t i = 0; i < af_firmware_regs_size; i++) {
@@ -258,26 +273,13 @@ int OV5640::init()
         // ret |= checkAFCmdStatus(OV5640_CMD_ACK, 0x00);
     }
 
+    delay(300);
+    debug_printf(_debug, "\nOV5640::init exit\n");
     return ret;
 }
 
 int OV5640::reset() {
-    int ret = 0;
-    readout_x = 0;
-    readout_y = 0;
-
-    readout_w = ACTIVE_SENSOR_WIDTH;
-    readout_h = ACTIVE_SENSOR_HEIGHT;
-
-    hts_target = 0;
-
-    // Reset all registers
-    ret |= cameraWriteRegister(SCCB_SYSTEM_CTRL_1, 0x11);
-    ret |= cameraWriteRegister(SYSTEM_CTROL0, 0x82);
-
-    // Delay 5 ms
-    delay(5);
-    return ret;
+    return 0;
 }
 
 
@@ -430,8 +432,7 @@ int OV5640::checkAFCmdStatus(uint16_t reg, uint8_t value) {
 
 int OV5640::setResolution(int32_t resolution)
 {
-    setResolutionWithZoom(resolution, resolution, 0, 0);
-    return 0;
+    return setResolutionWithZoom(resolution, resolution, 0, 0);
 }
 
 int OV5640::setResolutionWithZoom(int32_t resolution, int32_t zoom_resolution, uint32_t zoom_x, uint32_t zoom_y)
@@ -457,12 +458,13 @@ int OV5640::setResolutionWithZoom(int32_t resolution, int32_t zoom_resolution, u
 }
 
 int OV5640::setPixelFormat(int32_t pixformat) {
+    debug_printf(_debug, "setPixelFormat(%x)\n", pixformat);
     // const uint8_t(*regs)[2];
     int ret = 0;
     uint8_t reg = 0;
 
     // Not a multiple of 8. The JPEG encoder on the OV5640 can't handle this.
-    if ((_format == CAMERA_BAYER) &&
+    if ((_format == CAMERA_JPEG) &&
         ((_resolutions[_framesize][0] % 8) || (_resolutions[_framesize][1] % 8))) {
         if (_debug) {
             _debug->println("JPEG Framesize not divisible by 8........");
@@ -546,12 +548,7 @@ uint8_t OV5640::setFramesize(int w, int h) {
 //    _width = w;
 //    _height = h;
 
-    if (_debug) {
-        _debug->print("W: ");
-        _debug->print(w);
-        _debug->print(" H: ");
-        _debug->println(h);
-    }
+    debug_printf(_debug, "\nOV5640::setFramesize(%u, %u)/n", w, h);
     uint8_t reg = 0;
     int ret = 0;
     // uint16_t w = _resolutions[framesize][0];
@@ -580,9 +577,12 @@ uint8_t OV5640::setFramesize(int w, int h) {
     //}
 
     // Invalid resolution.
+
+#if 0
     if ((w > ACTIVE_SENSOR_WIDTH) || (h > ACTIVE_SENSOR_HEIGHT)) {
         return 1;
     }
+#endif
 
     // Step 0: Clamp readout settings.
 
@@ -710,12 +710,10 @@ uint8_t OV5640::setFramesize(int w, int h) {
     ret |= cameraWriteRegister(TIMING_Y_INC, sensor_y_inc);
 
     ret |= cameraReadRegister(TIMING_TC_REG_20, reg);
-    ret |=
-        cameraWriteRegister(TIMING_TC_REG_20, (reg & 0xFE) | (sensor_div > 1));
+    ret |= cameraWriteRegister(TIMING_TC_REG_20, (reg & 0xFE) | (sensor_div > 1));
 
     ret |= cameraReadRegister(TIMING_TC_REG_21, reg);
-    ret |=
-        cameraWriteRegister(TIMING_TC_REG_21, (reg & 0xFE) | (sensor_div > 1));
+    ret |= cameraWriteRegister(TIMING_TC_REG_21, (reg & 0xFE) | (sensor_div > 1));
 
     ret |= cameraWriteRegister(VFIFO_HSIZE_H, w >> 8);
     ret |= cameraWriteRegister(VFIFO_HSIZE_L, w);

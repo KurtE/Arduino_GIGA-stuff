@@ -49,11 +49,11 @@ typedef enum {
 class OV5640 : public ImageSensor {
   public:
     OV5640(WIRECLASS &i2c = CameraWire);
-    enum { CAMERA_JPEG = 42 };  // temporarily here for now
+    enum { CAMERA_JPEG = 42,  OV5640_I2C_ADDR=0x3C};  // temporarily here for now
     int init();
     int reset();
     int getID() {
-        return GC2145_I2C_ADDR;
+        return OV5640_I2C_ADDR;
     };
     bool getMono() {
         return false;

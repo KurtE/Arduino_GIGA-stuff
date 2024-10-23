@@ -800,7 +800,9 @@ bool OV5640::begin_omnivision(framesize_t framesize, pixformat_t format,
         setDMACompleteISRPriority(192);
     }
 
-    if (reset() < 0) {
+    if (
+        
+    ) < 0) {
         if (_debug)
             _debug->println("Error: RESET failed");
         return false;
