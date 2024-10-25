@@ -273,6 +273,11 @@ int OV5640::init()
         // ret |= checkAFCmdStatus(OV5640_CMD_ACK, 0x00);
     }
 
+//    // experiment set the second bit
+//    uint8_t scb1;
+//    cameraReadRegister(SCCB_SYSTEM_CTRL_1, scb1);
+//    cameraWriteRegister(SCCB_SYSTEM_CTRL_1, scb1 | 0x2);
+
     delay(300);
     debug_printf(_debug, "\nOV5640::init exit\n");
     return ret;
@@ -282,10 +287,26 @@ int OV5640::reset() {
     return 0;
 }
 
+#ifdef DEBUG_CAMERA_REG
+uint32_t touched_registers[400] = {0};
+
+
+inline void set_camera_register_touched(uint16_t reg) {
+    if (reg < 0x3000 ) return;
+    reg -= 0x3000;
+    touched_registers[reg >> 5] |= 1 << (reg & 0x1f);
+}
+
+inline bool was_camera_register_touched(uint16_t reg) {
+    if (reg < 0x3000 ) return false;
+    reg -= 0x3000;
+    return (touched_registers[reg >> 5] &  (1 << (reg & 0x1f))) ? true : false;
+}
+#endif
 
 
 // Read a single uint8_t from address and return it as a uint8_t
-uint8_t OV5640::cameraReadRegister(uint16_t reg_addr, uint8_t &reg_data) {
+uint8_t OV5640::cameraReadRegister(uint16_t reg_addr, uint8_t &reg_data, bool debug_output) {
     _i2c->beginTransmission(0x3C);
     _i2c->write(reg_addr >> 8);
     _i2c->write(reg_addr);
@@ -299,6 +320,19 @@ uint8_t OV5640::cameraReadRegister(uint16_t reg_addr, uint8_t &reg_data) {
         return 0;
     }
     int ret = _i2c->read();
+    #ifdef DEBUG_CAMERA_REG
+    set_camera_register_touched(reg_addr);
+    if (debug_output) {
+        debug_printf(_debug, "CAM read reg: %04x = %02x", reg_addr, ret);
+        for (uint16_t ii = 0; ii < CNT_REG_NAME_TABLE; ii++) {
+            if (OV5640_reg_name_table[ii].reg == reg_addr) {
+                debug_printf(_debug, "\t//%s", OV5640_reg_name_table[ii].reg_name);
+                break;
+            }
+        }
+        _debug->println();
+    }
+    #endif
     delay(1);
     if (ret < 0) {
         return 1;
@@ -311,6 +345,7 @@ uint8_t OV5640::cameraReadRegister(uint16_t reg_addr, uint8_t &reg_data) {
 
 uint8_t OV5640::cameraWriteRegister(uint16_t reg, uint8_t data) {
 #ifdef DEBUG_CAMERA_REG
+    set_camera_register_touched(reg);
     debug_printf(_debug, "CAM set reg: %04x = %02x", reg, data);
     for (uint16_t ii = 0; ii < CNT_REG_NAME_TABLE; ii++) {
         if (OV5640_reg_name_table[ii].reg == reg) {
@@ -1227,14 +1262,42 @@ uint8_t OV5640::setAutoFocusMode() {
 uint8_t OV5640::printRegs(void) {
     if (_debug == nullptr) return 0;
     uint8_t reg_value = 0;
+#if 1
+
+#define TOUCH_ARRAY_SIZE (sizeof(touched_registers) / sizeof(touched_registers[0]))    
+    _debug->println("uint32_t touched_registers[] = {");
+    for (uint16_t i = 0; i < TOUCH_ARRAY_SIZE; i +=8) {
+        debug_printf(_debug, "\t0x%x, 0x%x, 0x%x, 0x%x, 0x%x, 0x%x, 0x%x, 0x%x,\n",  touched_registers[i],
+        touched_registers[i+1], touched_registers[i+2], touched_registers[i+3],
+        touched_registers[i+4], touched_registers[i+5], touched_registers[i+6],
+        touched_registers[i+7]);
+    }
+    _debug->println("};");
+
+    for (uint16_t reg = 0x3000; reg < 0x6040; reg++) {
+        if (was_camera_register_touched(reg)) {
+            cameraReadRegister(reg, reg_value, false);
+            debug_printf(_debug, "\t0x%04X: %u(%x)", reg, reg_value, reg_value);
+            // this as brute force as it gets...
+            for (uint16_t ii = 0; ii < CNT_REG_NAME_TABLE; ii++) {
+                if (OV5640_reg_name_table[ii].reg == reg) {
+                    debug_printf(_debug, "\t//%s", OV5640_reg_name_table[ii].reg_name);
+                    break;
+                } 
+            }
+            _debug->println();
+        }
+    }
+#else    
     _debug->println("\n*** Camera Registers ***");
     for (uint16_t ii = 0; ii < CNT_REG_NAME_TABLE; ii++) {
-        cameraReadRegister(OV5640_reg_name_table[ii].reg, reg_value);
+        cameraReadRegister(OV5640_reg_name_table[ii].reg, reg_value, false);
         //debug_printf(_debug, "%s(%x): %u(%x)\n", OV5640_reg_name_table[ii].reg_name,
         //             OV5640_reg_name_table[ii].reg, reg_value, reg_value);
         debug_printf(_debug, "\t0x%04X: %u(%x)\t//%s\n", 
                      OV5640_reg_name_table[ii].reg, reg_value, reg_value, OV5640_reg_name_table[ii].reg_name);
     }
     _debug->println();
+#endif    
     return 0;
 }

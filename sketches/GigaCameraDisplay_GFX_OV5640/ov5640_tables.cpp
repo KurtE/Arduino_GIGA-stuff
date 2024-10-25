@@ -53,6 +53,11 @@ const int OV5640::_resolutions[][2] = {
 };
 const int32_t  OV5640::_resolutions_count = sizeof(_resolutions) / sizeof(_resolutions[0]);
 
+
+#define OMV_OV5640_PLL_CTRL2                (0x90)
+#define OMV_OV5640_PLL_CTRL3                (0x13)
+
+
 const uint8_t OV5640::default_regs[][3] = {
 
     // https://github.com/ArduCAM/Arduino/blob/master/ArduCAM/ov5640_regs.h
@@ -615,79 +620,321 @@ typedef struct {
 } OV5640_TO_NAME_t;
 
 const OV5640::OV5640_TO_NAME_t OV5640::OV5640_reg_name_table[] PROGMEM{
+    {F("SYSTEM_RESET_00"), 0x3000},
+    {F("SYSTEM_RESET_01"), 0x3001},
+    {F("SYSTEM_RESET_02"), 0x3002},
+    {F("CLOCK_ENABLE_00"), 0x3004},
+    {F("MIPI_CONTROL_00"), 0x300e},
+    {F("CLOCK_ENABLE_02"), 0x3006},
     {F("SYSTEM_CTROL0"), 0x3008},
-    {F("DRIVE_CAPABILITY"), 0x302c},
-    {F("SC_PLLS_CTRL0"), 0x303a},
-    {F("SC_PLLS_CTRL1"), 0x303b},
-    {F("SC_PLLS_CTRL2"), 0x303c},
-    {F("SC_PLLS_CTRL3"), 0x303d},
+    {F("PAD_OUTPUT_ENABLE_01"), 0x3017},
+    {F("PAD_OUTPUT_ENABLE_02"), 0x3018},
+    {F("AF_CMD_MAIN"), 0x3022},
+    {F("AF_CMD_ACK"), 0x3023},
+    {F("OV5640_CMD_PARA0"), 0x3024},
+    {F("OV5640_CMD_PARA1"), 0x3025},
+    {F("OV5640_CMD_PARA2"), 0x3026},
+    {F("OV5640_CMD_PARA3"), 0x3027},
+    {F("OV5640_CMD_PARA4"), 0x3028},
+    {F("AF_FW_STATUS"), 0x3029},
+    {F("PAD_CONTROL_00"), 0x302c},
+    {F("SC_PLL_CONTRL0"), 0x3034},
+    {F("SC_PLL_CONTRL1"), 0x3035},
+    {F("SC_PLL_CONTRL2"), 0x3036},
+    {F("SC_PLL_CONTRL3"), 0x3037},
+    {F("SC_PLL_CONTRL5"), 0x3039},
+    {F("SCCB_SYSTEM_CTRL_1"), 0x3103},
+    {F("SYSTEM_ROOT_DIVIDER"), 0x3108},
+    {F("AWB_R_GAIN_H"), 0x3400},
+    {F("AWB_R_GAIN_L"), 0x3401},
+    {F("AWB_G_GAIN_H"), 0x3402},
+    {F("AWB_G_GAIN_L"), 0x3403},
+    {F("AWB_B_GAIN_H"), 0x3404},
+    {F("AWB_B_GAIN_L"), 0x3405},
+    {F("AWB_MANUAL_CONTROL"), 0x3406},
+    {F("AEC_PK_EXPOSURE_0"), 0x3500},
+    {F("AEC_PK_EXPOSURE_1"), 0x3501},
+    {F("AEC_PK_EXPOSURE_2"), 0x3502},
     {F("AEC_PK_MANUAL"), 0x3503},
-    {F("X_ADDR_ST_H"), 0x3800},
-    {F("X_ADDR_ST_L"), 0x3801},
-    {F("Y_ADDR_ST_H"), 0x3802},
-    {F("Y_ADDR_ST_L"), 0x3803},
-    {F("X_ADDR_END_H"), 0x3804},
-    {F("X_ADDR_END_L"), 0x3805},
-    {F("Y_ADDR_END_H"), 0x3806},
-    {F("Y_ADDR_END_L"), 0x3807},
-    {F("X_OUTPUT_SIZE_H"), 0x3808},
-    {F("X_OUTPUT_SIZE_L"), 0x3809},
-    {F("Y_OUTPUT_SIZE_H"), 0x380a},
-    {F("Y_OUTPUT_SIZE_L"), 0x380b},
-    {F("X_TOTAL_SIZE_H"), 0x380c},
-    {F("X_TOTAL_SIZE_L"), 0x380d},
-    {F("Y_TOTAL_SIZE_H"), 0x380e},
-    {F("Y_TOTAL_SIZE_L"), 0x380f},
-    {F("X_OFFSET_H"), 0x3810},
-    {F("X_OFFSET_L"), 0x3811},
-    {F("Y_OFFSET_H"), 0x3812},
-    {F("Y_OFFSET_L"), 0x3813},
-    {F("X_INCREMENT"), 0x3814},
-    {F("Y_INCREMENT"), 0x3815},
-    {F("TIMING_TC_REG20"), 0x3820},
-    {F("TIMING_TC_REG21"), 0x3821},
-    {F("PCLK_RATIO"), 0x3824},
-    {F("FRAME_CTRL01"), 0x4201},
-    {F("FRAME_CTRL02"), 0x4202},
-    {F("FORMAT_CTRL00"), 0x4300},
-    {F("CLOCK_POL_CONTROL"), 0x4740},
+    {F("AEC_PK_REAL_GAIN_H"), 0x350A},
+    {F("AEC_PK_REAL_GAIN_L"), 0x350B},
+    {F("TIMING_HS_H"), 0x3800},
+    {F("TIMING_HS_L"), 0x3801},
+    {F("TIMING_VS_H"), 0x3802},
+    {F("TIMING_VS_L"), 0x3803},
+    {F("TIMING_HW_H"), 0x3804},
+    {F("TIMING_HW_L"), 0x3805},
+    {F("TIMING_VH_H"), 0x3806},
+    {F("TIMING_VH_L"), 0x3807},
+    {F("TIMING_DVPHO_H"), 0x3808},
+    {F("TIMING_DVPHO_L"), 0x3809},
+    {F("TIMING_DVPVO_H"), 0x380A},
+    {F("TIMING_DVPVO_L"), 0x380B},
+    {F("TIMING_HTS_H"), 0x380C},
+    {F("TIMING_HTS_L"), 0x380D},
+    {F("TIMING_VTS_H"), 0x380E},
+    {F("TIMING_VTS_L"), 0x380F},
+    {F("TIMING_HOFFSET_H"), 0x3810},
+    {F("TIMING_HOFFSET_L"), 0x3811},
+    {F("TIMING_VOFFSET_H"), 0x3812},
+    {F("TIMING_VOFFSET_L"), 0x3813},
+    {F("TIMING_X_INC"), 0x3814},
+    {F("TIMING_Y_INC"), 0x3815},
+    {F("TIMING_TC_REG_20"), 0x3820},
+    {F("COMPRESSION_ENABLE_b5"), 0x3821},
+    {F("TIMING_TC_REG_21"), 0x3821},
+    {F("AEC_CTRL_00"), 0x3A00},
+    {F("AEC_GAIN_CEILING_H"), 0x3A18},
+    {F("AEC_GAIN_CEILING_L"), 0x3A19},
+    {F("BLC_CTRL_00"), 0x4000},
+    {F("BLACK_LEVEL_00_H"), 0x402C},
+    {F("BLACK_LEVEL_00_L"), 0x402D},
+    {F("BLACK_LEVEL_01_H"), 0x402E},
+    {F("BLACK_LEVEL_01_L"), 0x402F},
+    {F("BLACK_LEVEL_10_H"), 0x4030},
+    {F("BLACK_LEVEL_10_L"), 0x4031},
+    {F("BLACK_LEVEL_11_H"), 0x4032},
+    {F("BLACK_LEVEL_11_L"), 0x4033},
+    {F("FORMAT_CONTROL"), 0x4300},
+    {F("JPEG_CTRL00"), 0x4400},
+    {F("JPEG_CTRL01"), 0x4401},
+    {F("JPEG_CTRL02"), 0x4402},
+    {F("JPEG_CTRL03"), 0x4403},
+    {F("JPEG_CTRL04"), 0x4404},
+    {F("JPEG_CTRL05"), 0x4405},
+    {F("JPEG_CTRL06"), 0x4406},
+    {F("JPEG_CTRL07"), 0x4407},
+    {F("VFIFO_HSIZE_H"), 0x4602},
+    {F("VFIFO_HSIZE_L"), 0x4603},
+    {F("VFIFO_VSIZE_H"), 0x4604},
+    {F("VFIFO_VSIZE_L"), 0x4605},
+    {F("JPEG_MODE_SEL"), 0x4713},
     {F("ISP_CONTROL_01"), 0x5001},
-    {F("FORMAT_CTRL"), 0x501F},
-    {F("PRE_ISP_TEST_SETTING_1"), 0x503D},
-    {F("SCALE_CTRL_1"), 0x5601},
-    {F("SCALE_CTRL_2"), 0x5602},
-    {F("SCALE_CTRL_3"), 0x5603},
-    {F("SCALE_CTRL_4"), 0x5604},
-    {F("SCALE_CTRL_5"), 0x5605},
-    {F("SCALE_CTRL_6"), 0x5606},
-    {F("X_START_H"), 0x5680},
-    {F("X_START_L"), 0x5681},
-    {F("Y_START_H"), 0x5682},
-    {F("Y_START_L"), 0x5683},
-    {F("X_WINDOW_H"), 0x5684},
-    {F("X_WINDOW_L"), 0x5685},
-    {F("Y_WINDOW_H"), 0x5686},
-    {F("Y_WINDOW_L"), 0x5687},
-    {F("VFIFO_CTRL0C"), 0x460C},
-    {F("VFIFO_X_SIZE_H"), 0x4602},
-    {F("VFIFO_X_SIZE_L"), 0x4603},
-    {F("VFIFO_Y_SIZE_H"), 0x4604},
-    {F("VFIFO_Y_SIZE_L"), 0x4605},
-    {F("COMPRESSION_CTRL00"), 0x4400},
-    {F("COMPRESSION_CTRL01"), 0x4401},
-    {F("COMPRESSION_CTRL02"), 0x4402},
-    {F("COMPRESSION_CTRL03"), 0x4403},
-    {F("COMPRESSION_CTRL04"), 0x4404},
-    {F("COMPRESSION_CTRL05"), 0x4405},
-    {F("COMPRESSION_CTRL06"), 0x4406},
-    {F("COMPRESSION_CTRL07"), 0x4407},
-    {F("COMPRESSION_ISI_CTRL"), 0x4408},
-    {F("COMPRESSION_CTRL09"), 0x4409},
-    {F("COMPRESSION_CTRL0a"), 0x440a},
-    {F("COMPRESSION_CTRL0b"), 0x440b},
-    {F("COMPRESSION_CTRL0c"), 0x440c},
-    {F("COMPRESSION_CTRL0d"), 0x440d},
-    {F("COMPRESSION_CTRL0E"), 0x440e},
+    {F("FORMAT_CONTROL_MUX"), 0x501F},
+    {F("PRE_ISP_TEST"), 0x503D},
+    {F("CIP_SHARPENMT_THRESH1"), 0x5300},
+    {F("ISP_CONTROL_00"), 0x5300},
+    {F("CIP_SHARPENMT_THRESH2"), 0x5301},
+    {F("CIP_SHARPENMT_OFFSET1"), 0x5302},
+    {F("CIP_SHARPENMT_OFFSET2"), 0x5303},
+    {F("CIP_CTRL"), 0x5308},
+    {F("CIP_SHARPENTH_THRESH1"), 0x5309},
+    {F("CIP_SHARPENTH_THRESH2"), 0x530A},
+    {F("CIP_SHARPENTH_OFFSET1"), 0x530B},
+    {F("CIP_SHARPENTH_OFFSET2"), 0x530C},
+    {F("SDE_CTRL0"), 0x5580},
+    {F("SDE_CTRL1"), 0x5581},
+    {F("SDE_CTRL2"), 0x5582},
+    {F("SDE_CTRL5"), 0x5585},
+    {F("SDE_CTRL6"), 0x5586},
+    {F("SDE_CTRL8"), 0x5588},
+    {F("MCU_FIRMWARE_BASE"), 0x8000}
+
+#if 0
+3612
+3618
+3620
+3621
+3622
+3630
+3632
+3633
+3634
+3635
+3703
+3704
+3705
+3708
+3709
+370b
+370c
+3715
+3717
+371b
+3731
+3824
+3901
+3905
+3906
+3a02
+3a03
+3a08
+3a09
+3a0a
+3a0b
+3a0d
+3a0e
+3a0f
+3a10
+3a11
+3a14
+3a15
+3a1b
+3a1e
+3a1f
+3c00
+3c01
+3c04
+3c05
+3c06
+3c07
+3c08
+3c09
+3c0a
+3c0b
+
+4001
+4004
+4005
+4050
+4051
+4401
+460b
+460c
+471c
+4723
+4740
+5000
+5025
+5180
+5181
+5182
+5183
+5184
+5185
+5186
+5187
+5188
+5189
+518a
+518b
+518c
+518d
+518e
+518f
+5190
+5191
+5192
+5193
+5194
+5195
+5196
+5197
+5198
+5199
+519a
+519b
+519c
+519d
+519e
+5304
+5305
+5306
+5307
+5381
+5382
+5383
+5384
+5385
+5386
+5387
+5388
+5389
+538a
+538b
+5480
+5481
+5482
+5483
+5484
+5485
+5486
+5487
+5488
+5489
+548a
+548b
+548c
+548d
+548e
+548f
+5490
+5583
+5584
+5589
+558a
+558b
+5688
+5689
+568a
+568b
+568c
+568d
+568e
+568f
+5800
+5801
+5802
+5803
+5804
+5805
+5806
+5807
+5808
+5809
+580a
+580b
+580c
+580d
+580e
+580f
+5810
+5811
+5812
+5813
+5814
+5815
+5816
+5817
+5818
+5819
+581a
+581b
+581c
+581d
+581e
+581f
+5820
+5821
+5822
+5823
+5824
+5825
+5826
+5827
+5828
+5829
+582a
+582b
+582c
+582d
+582e
+582f
+5830
+5831
+5832
+5833
+5834
+5835
+5836
+5837
+5838
+5839
+583a
+583b
+583c
+583d
+#endif
 };
 
 const uint16_t OV5640::CNT_REG_NAME_TABLE = sizeof(OV5640_reg_name_table) / sizeof(OV5640_reg_name_table[0]);

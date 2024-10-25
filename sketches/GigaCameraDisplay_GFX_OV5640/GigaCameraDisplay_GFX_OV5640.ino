@@ -31,8 +31,8 @@ uint16_t color565(uint8_t r, uint8_t g, uint8_t b) {
 //#define ARDUCAM_CAMERA_HM0360
 //#define ARDUCAM_CAMERA_OV767X
 #define ARDUCAM_CAMERA_OV5640
-#define CAMERA_WIDTH 320
-#define CAMERA_HEIGHT 240
+#define CAMERA_WIDTH 640
+#define CAMERA_HEIGHT 480
 
 
 #ifdef ARDUCAM_CAMERA_HM01B0

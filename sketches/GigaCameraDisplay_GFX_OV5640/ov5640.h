@@ -111,7 +111,7 @@ class OV5640 : public ImageSensor {
 
     uint8_t setAutoFocusMode();
 
-    uint8_t cameraReadRegister(uint16_t reg_addr, uint8_t &reg_data);
+    uint8_t cameraReadRegister(uint16_t reg_addr, uint8_t &reg_data, bool debug_output= true);
     uint8_t cameraWriteRegister(uint16_t reg, uint8_t data);
     uint8_t cameraWriteFirmware();
     uint8_t setFramesize(int w, int h);
