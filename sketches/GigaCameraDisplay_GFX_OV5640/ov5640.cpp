@@ -1277,11 +1277,12 @@ uint8_t OV5640::printRegs(void) {
     for (uint16_t reg = 0x3000; reg < 0x6040; reg++) {
         if (was_camera_register_touched(reg)) {
             cameraReadRegister(reg, reg_value, false);
-            debug_printf(_debug, "\t0x%04X: %u(%x)", reg, reg_value, reg_value);
+            // lets get as close as possible to format of data out of the python
+            debug_printf(_debug, "0x%04X , %u ( 0x%x )", reg, reg_value, reg_value);
             // this as brute force as it gets...
             for (uint16_t ii = 0; ii < CNT_REG_NAME_TABLE; ii++) {
                 if (OV5640_reg_name_table[ii].reg == reg) {
-                    debug_printf(_debug, "\t//%s", OV5640_reg_name_table[ii].reg_name);
+                    debug_printf(_debug, ", %s", OV5640_reg_name_table[ii].reg_name);
                     break;
                 } 
             }
