@@ -27,7 +27,7 @@
   // CAMERA_R800x600     = 5,   /* SVGA               */
   // CAMERA_R1600x1200   = 6,   /* UXGA               */
   // CAMERA_RMAX                /* Sentinel value */
-#define RESOLUTION CAMERA_R320x240
+#define RESOLUTION CAMERA_R640x480
 
 //=============================================================================
 #ifdef ARDUCAM_CAMERA_HM01B0

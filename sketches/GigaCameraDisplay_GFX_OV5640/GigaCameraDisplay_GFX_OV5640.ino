@@ -2,14 +2,14 @@
 #include <MemoryHexDump.h>
 REDIRECT_STDOUT_TO(Serial)
 #include "Arduino_GigaDisplay_GFX.h"
-#define GC9A01A_CYAN 0x07FF
-#define GC9A01A_RED 0xf800
-#define GC9A01A_BLUE 0x001F
-#define GC9A01A_GREEN 0x07E0
-#define GC9A01A_MAGENTA 0xF81F
-#define GC9A01A_WHITE 0xffff
-#define GC9A01A_BLACK 0x0000
-#define GC9A01A_YELLOW 0xFFE0
+#define RGB565_CYAN 0x07FF
+#define RGB565_RED 0xf800
+#define RGB565_BLUE 0x001F
+#define RGB565_GREEN 0x07E0
+#define RGB565_MAGENTA 0xF81F
+#define RGB565_WHITE 0xffff
+#define RGB565_BLACK 0x0000
+#define RGB565_YELLOW 0xFFE0
 #define ALIGN_PTR(p, a) ((p & (a - 1)) ? (((uintptr_t)p + a) & ~(uintptr_t)(a - 1)) : p)
 
 uint16_t color565(uint8_t r, uint8_t g, uint8_t b) {
@@ -160,6 +160,9 @@ void setup() {
 
     fb.setBuffer((uint8_t *)ALIGN_PTR((uintptr_t)fb_mem, 32));
     printf("Frame buffer: %p\n", fb.getBuffer());
+    // experiment set buffer to GREEN to see if it shows up
+    uint16_t *pfb = (uint16_t*)fb.getBuffer();
+    for (uint32_t i = 0; i < CAMERA_WIDTH*CAMERA_HEIGHT; i++) *pfb++ = RGB565_GREEN;
 
     // clear the display (gives a nice black background)
     Serial.println("Before setRotation");
@@ -169,7 +172,7 @@ void setup() {
     Serial.println("Before fillscreen");
     Serial.flush();
     elapsedMicros em;
-    display.fillScreen(GC9A01A_BLUE);
+    display.fillScreen(RGB565_BLUE);
     Serial.println(em, DEC);
     Serial.println("end setup");
     Serial.flush();

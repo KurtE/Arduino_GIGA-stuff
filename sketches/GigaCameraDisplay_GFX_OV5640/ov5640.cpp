@@ -16,6 +16,10 @@
 #include "ov5640.h"
 #include "ov5640_regs.h"
 
+// experiment to set reset and powerdown pins
+#define OMV_CSI_RESET_PIN 66
+#define OMV_CSI_POWER_PIN 67
+
 //#define debug Serial
 // #define NO_CLK_PIN
 
@@ -77,7 +81,7 @@ static inline void DBGdigitalToggleFast(uint8_t pin){}
 #define DUMMY_LINES 6
 
 #define BLANK_COLUMNS 0
-#define DUMMY_COLUMNS 8
+#define DUMMY_COLUMNS 16 //8
 
 #define SENSOR_WIDTH 2624
 #define SENSOR_HEIGHT 1964
@@ -207,6 +211,11 @@ int OV5640::init()
 {
     int ret = 0;
     int ret1 = 0;
+
+
+    pinMode(OMV_CSI_RESET_PIN, INPUT_PULLUP);
+    pinMode(OMV_CSI_POWER_PIN, OUTPUT);
+    digitalWrite(OMV_CSI_POWER_PIN, LOW);
 
     debug_printf(_debug, "\nOV5640::init called\n");
     _i2c->begin();
