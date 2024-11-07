@@ -2,7 +2,7 @@
 #ifndef _OV5640_H_
 #define _OV5640_H_
 
-#include "OV5640_regs.h"
+#include "ov5640_regs.h"
 #include <Arduino.h>
 // Teensy 4.1 default to CSI pisn
 #include "arducam_dvp.h"
