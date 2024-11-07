@@ -191,7 +191,7 @@ static const uint8_t sharpness_regs[NUM_SHARPNESS_LEVELS][1] = {
 // const int OV5640_D[8] = {OV5640_D0, OV5640_D1, OV5640_D2, OV5640_D3,
 //                          OV5640_D4, OV5640_D5, OV5640_D6, OV5640_D7};
 
-OV5640::OV5640(WIRECLASS &i2c)
+OV5640::OV5640(TwoWire &i2c)
     : _i2c(&i2c) 
 {
 }

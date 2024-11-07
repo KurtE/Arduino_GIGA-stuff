@@ -48,7 +48,7 @@ typedef enum {
 
 class OV5640 : public ImageSensor {
   public:
-    OV5640(WIRECLASS &i2c = CameraWire);
+    OV5640(TwoWire &i2c = CameraWire);
     enum { CAMERA_JPEG = 42,  OV5640_I2C_ADDR=0x3C};  // temporarily here for now
     int init();
     int reset();
@@ -97,7 +97,7 @@ class OV5640 : public ImageSensor {
     int setWindow(uint16_t reg, uint16_t x, uint16_t y, uint16_t w, uint16_t h);
     Stream *_debug;
     bool _verbose = false;
-    WIRECLASS *_i2c;
+    TwoWire *_i2c;
     bool _grayscale = false;
     int _framesize = CAMERA_R320x240;
     uint8_t aecCtrl00_old = 0x78;

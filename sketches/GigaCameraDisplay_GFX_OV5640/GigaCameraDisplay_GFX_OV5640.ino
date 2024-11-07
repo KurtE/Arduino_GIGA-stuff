@@ -254,7 +254,7 @@ void loop() {
 
         if (Serial.available()) {
             while (Serial.read() != -1) {}
-            cam.printRegs();
+            //cam.printRegs();
             MemoryHexDump(Serial, fb.getBuffer(), 1024, true, "Start of Camera Buffer\n");
             Serial.println("*** Paused ***");
             while (Serial.read() == -1) {}
