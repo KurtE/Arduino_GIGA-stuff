@@ -1,7 +1,9 @@
 //connect  Serial1 TX -> Serial2 RX, Serial2 TX -> Serial3 RX, Serial3 TX -> Serial4 RX....
+#define USE_SERIAL2
+#define USE_SERIAL3
+#define USE_SERIAL4
 
-
-#define SPD 115200
+#define SPD 9600
 int loop_count = 0;
 
 #define BUFFER_SIZE 80
@@ -23,20 +25,48 @@ public:
 
 BufferInfoClass buffers[5];
 uint32_t millis_last_input = 0;
+extern void wait_for_user_input();
 
 void setup() {
   pinMode(LED_BUILTIN, OUTPUT);
+  digitalWrite(LED_BUILTIN, LOW);
   while (!Serial && millis() < 4000)
     ;
-  Serial.begin(115200);
+  Serial.begin(9600);
   delay(800);
   Serial.println("Test all Serials");
   Serial.print("Baud rate: ");
   Serial.println(SPD, DEC);
+  wait_for_user_input();
   Serial1.begin(SPD);
+  Serial1.println("Serial1 started");
+#ifdef USE_SERIAL2
+  //wait_for_user_input();
   Serial2.begin(SPD);
+  Serial2.println("Serial2 started");
+#endif
+#ifdef USE_SERIAL3
+  //wait_for_user_input();
   Serial3.begin(SPD);
+  Serial3.println("Serial3 started");
+#endif
+#ifdef USE_SERIAL4
+  //wait_for_user_input();
   Serial4.begin(SPD);
+  Serial4.println("Serial4 started");
+#endif
+  wait_for_user_input();
+}
+
+void wait_for_user_input() {
+  Serial.println("Waiting...");
+#if 0
+  while (!Serial.available()) {}
+  while (Serial.available()) {Serial.read();}
+#else
+  while (Serial.read() == -1) {};
+  while (Serial.read() != -1) {};
+#endif
 }
 
 #define MIN(a, b) ((a) <= (b) ? (a) : (b))
@@ -118,9 +148,15 @@ void CompareBuffers(uint8_t index1, uint8_t index2) {
 void loop() {
   CopyFromTo(Serial, Serial1, 0);
   CopyFromTo(Serial1, Serial, 1);
+#ifdef USE_SERIAL2
   CopyFromTo(Serial2, Serial2, 2);
+#endif
+#ifdef USE_SERIAL3
   CopyFromTo(Serial3, Serial3, 3);
+#endif
+#ifdef USE_SERIAL4
   CopyFromTo(Serial4, Serial4, 4);
+#endif
 
   // now see if we should compare the data yet or not
   if (buffers[0].cb_buffer && ((millis() - millis_last_input) > 100)) {
