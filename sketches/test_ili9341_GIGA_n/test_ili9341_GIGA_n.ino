@@ -2,7 +2,7 @@
 #include <GIGA_digitalWriteFast.h>
 #include <elapsedMillis.h>
 #include <LibPrintf.h>
-#include <RPC.h>
+//#include <RPC.h>
 
 #define TFT_DC 9
 #define TFT_RST 8
