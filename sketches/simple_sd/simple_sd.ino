@@ -18,14 +18,14 @@
 #define DEBUG_PIN 4
 
 // SDCARD_SS_PIN is defined for the built-in SD on some boards.
-const uint8_t SD_CS_PIN = 6;
+const uint8_t SD_CS_PIN = 5;
 
 // Try max SPI clock for an SD. Reduce SPI_CLOCK if errors occur.
 #define SPI_CLOCK SD_SCK_MHZ(12)
 
 // Try to select the best SD card configuration.
 //#define SD_CONFIG SdSpiConfig(SD_CS_PIN, DEDICATED_SPI, SPI_CLOCK, &SPI1)
-#define SD_CONFIG SdSpiConfig(SD_CS_PIN, SHARED_SPI, SPI_CLOCK, &SPI1)
+#define SD_CONFIG SdSpiConfig(SD_CS_PIN, SHARED_SPI, SPI_CLOCK, &SPI)
 
 //------------------------------------------------------------------------------
 
@@ -69,8 +69,13 @@ void setup() {
     // Initialize the SD card.
     Serial.println("Before SD Begin");
 
-//    digitalWrite(DEBUG_PIN, HIGH);  // make sure display does not interfere
-    if (!sd.cardBegin(SD_CONFIG)) {
+//    SPI1.begin(); // make sure it is started
+//    SPI1.beginTransaction(SPISettings(20000000, MSBFIRST, SPI_MODE0));
+//    SPI1.endTransaction();
+
+    //digitalWrite(DEBUG_PIN, HIGH);  // make sure display does not interfere
+    //if (!sd.cardBegin(SD_CONFIG)) 
+    {
 //        digitalWrite(DEBUG_PIN, LOW);  // make sure display does not interfere
         Serial.print("Card Begin failed Error: ");
         Serial.println(sd.sdErrorCode());
@@ -78,7 +83,8 @@ void setup() {
     }
     //digitalWrite(DEBUG_PIN, LOW);  // make sure display does not interfere
 
-    if (!sd.volumeBegin()) {
+    //if (!sd.volumeBegin()) 
+    {
         Serial.println("Volume begin failed");
         while (1) {}
     }

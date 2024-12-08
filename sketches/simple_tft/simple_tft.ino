@@ -25,9 +25,9 @@ void setup() {
   delay(250);
   Serial.println("After Serial begin");
   //SPI1.begin();
-  Serial.println("After SPI1 begin");
-  SPI1.beginTransaction(SPISettings(3000000, MSBFIRST, SPI_MODE0));
-  Serial.println("After begin Transaction");
+  //Serial.println("After SPI1 begin");
+  //SPI1.beginTransaction(SPISettings(3000000, MSBFIRST, SPI_MODE0));
+//Serial.println("After begin Transaction");
 //  step();
   Serial.println("Before tft begin"); Serial.flush(); 
   #ifdef USE_NEW
