@@ -29,6 +29,7 @@ ILI9341_GIGA_n tft(&SPI1, TFT_CS, TFT_DC, TFT_RST);
 
 // needing forward references?
 extern unsigned long testFillScreen();
+#if 0
 extern unsigned long testText();
 extern unsigned long testLines(uint16_t color) ;
 extern unsigned long testFastLines(uint16_t color1, uint16_t color2);
@@ -42,17 +43,28 @@ extern unsigned long testRoundRects();
 extern unsigned long testFilledRoundRects();
 extern unsigned long testFilledRectsFB(uint16_t color1, uint16_t color2);
 extern unsigned long testFilledRoundRectsFB() ;
+#endif
 extern void  WaitForUserInput();
 
-
 void setup() {
-  while (!Serial && millis() < 5000) ; // wait for Arduino Serial Monitor
   Serial.begin(9600);
+  while (!Serial && millis() < 5000) ; // wait for Arduino Serial Monitor
   delay(500);
   Serial.println("ILI9341 Test!");
   pinMode(DEBUG_PIN, OUTPUT);
   WaitForUserInput();
   tft.begin(30000000);
+  Serial.println("after TFT.begin");
+  WaitForUserInput();
+  
+  tft.fillScreen(ILI9341_RED);
+  delay(1000);
+  tft.fillScreen(ILI9341_GREEN);
+  delay(1000);
+  tft.fillScreen(ILI9341_BLUE);
+  delay(1000);
+
+#if 0
 #ifdef  SPI0_DISP2
   Serial.println("Reset pin 10 to output");
   //  pinMode(10, INPUT_PULLUP);
@@ -128,6 +140,7 @@ void setup() {
 
   WaitForUserInput();
 #endif
+#endif
 
 }
 
@@ -144,11 +157,11 @@ void WaitForUserInput() {
 void loop(void) {
   for (uint8_t rotation = 0; rotation < 4; rotation++) {
     tft.setRotation(rotation);
-    testText();
+    //testText();
+    testFillScreen();
     delay(1000);
   }
 }
-
 unsigned long testFillScreen() {
   unsigned long start = micros();
   tft.fillScreen(ILI9341_BLACK);
@@ -159,6 +172,7 @@ unsigned long testFillScreen() {
   return micros() - start;
 }
 
+#if 0
 unsigned long testText() {
   tft.fillScreen(ILI9341_BLACK);
   unsigned long start = micros();
@@ -431,3 +445,4 @@ unsigned long testFilledRoundRectsFB() {
   return micros() - start;
 }
 #endif 
+#endif

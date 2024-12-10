@@ -117,7 +117,7 @@
 class ILI9341_GIGA_n : public Print {
 public:
 
-constexpr ILI9341_GIGA_n(uint8_t CS, uint8_t DC, uint8_t RST = 255 ) : _cs(CS), _dc(DC), _rst(RST) {}
+  ILI9341_GIGA_n(uint8_t CS, uint8_t DC, uint8_t RST = 255 ) : _cs(CS), _dc(DC), _rst(RST) {}
 
   // Begin - main method to initialze the display.
   void setSPI(SPIClass &spi) {_pspi = &spi;}
