@@ -54,7 +54,6 @@
 #include "ILI9341_GIGA_zephyr.h"
 #include <SPI.h>
 #include <api/itoa.h>
-#include <LibPrintf.h>
 
 
 #define WIDTH ILI9341_TFTWIDTH
@@ -64,48 +63,17 @@
 // Constructor when using hardware ILI9241_KINETISK__pspi->  Faster, but must
 // use SPI pins
 // specific to each board type (e.g. 11,13 for Uno, 51,52 for Mega, etc.)
-ILI9341_GIGA_n::ILI9341_GIGA_n(uint8_t cs, uint8_t dc, uint8_t rst, uint8_t mosi,
-                         uint8_t sclk, uint8_t miso) {
-  _cs = cs;
-  _dc = dc;
-  _rst = rst;
-  _mosi = mosi;
-  _sclk = sclk;
-  _miso = miso;
-  _width = WIDTH;
-  _height = HEIGHT;
-
-  rotation = 0;
-  cursor_y = cursor_x = 0;
-  textsize_x = textsize_y = 1;
-  textcolor = textbgcolor = 0xFFFF;
-  wrap = true;
-  font = NULL;
-  gfxFont = NULL;
-  setClipRect();
-  setOrigin();
-
-  // Added to see how much impact actually using non hardware CS pin might be
-  //_cspinmask = 0;
-  //_csport = NULL;
-
-#ifdef ENABLE_ILI9341_FRAMEBUFFER
-  _pfbtft = NULL;
-  _use_fbtft = 0; // Are we in frame buffer mode?
-  _we_allocated_buffer = NULL;
-#endif
-}
 
 // Constructor when using hardware ILI9241_KINETISK__pspi->  Faster, but must
 // use SPI pins
 // specific to each board type (e.g. 11,13 for Uno, 51,52 for Mega, etc.)
 
+#if 0
 ILI9341_GIGA_n::ILI9341_GIGA_n(SPIClass *pspi, uint8_t cs, uint8_t dc, uint8_t rst) {
   _pspi = pspi;
   _cs = cs;
   _dc = dc;
   _rst = rst;
-
   _width = WIDTH;
   _height = HEIGHT;
 
@@ -118,7 +86,11 @@ ILI9341_GIGA_n::ILI9341_GIGA_n(SPIClass *pspi, uint8_t cs, uint8_t dc, uint8_t r
   gfxFont = NULL;
   setClipRect();
   setOrigin();
-
+#else
+ILI9341_GIGA_n::ILI9341_GIGA_n(uint8_t cs_pin, uint8_t dc_pin, uint8_t rst_pin) :
+    _cs(cs_pin), _dc(dc_pin), _rst(rst_pin) 
+  {
+#endif
   // Added to see how much impact actually using non hardware CS pin might be
   //_cspinmask = 0;
   //_csport = NULL;
@@ -321,6 +293,7 @@ void ILI9341_GIGA_n::fillScreen(uint16_t color) {
 }
 
 // fill a rectangle
+uint16_t row_buff[320]; // 
 void ILI9341_GIGA_n::fillRect(int16_t x, int16_t y, int16_t w, int16_t h,
                            uint16_t color) {
   // printf("\tfillRect(%d, %d, %d, %d, %x)\n", x, y, w, h, color);
@@ -381,12 +354,19 @@ void ILI9341_GIGA_n::fillRect(int16_t x, int16_t y, int16_t w, int16_t h,
     // it'll cost more overhead, so we don't stall other SPI libs
     beginSPITransaction(_SPI_CLOCK);
     setAddr(x, y, x + w - 1, y + h - 1);
+    uint16_t color_swapped = (color >> 8) | ((color & 0xff) << 8);
     writecommand_cont(ILI9341_RAMWR);
+    setDataMode();
     for (y = h; y > 0; y--) {
+      #if 1
+      for (uint16_t i = 0; i < w; i++) row_buff[i] = color_swapped;
+        _pspi->transfer(row_buff, w * 2);
+      #else
       for (x = w; x > 1; x--) {
         writedata16_cont(color);
       }
       writedata16_cont(color);  // was last
+      #endif
 #if 0
 			if (y > 1 && (y & 1)) {
 				endSPITransaction();
@@ -1337,6 +1317,7 @@ void ILI9341_GIGA_n::begin(uint32_t spi_clock, uint32_t spi_clock_read) {
   pinMode(DEBUG_PIN_4, OUTPUT);
 #endif
   // Serial.println("_t3n::begin - completed"); Serial.flush();
+  setRotation(0); 
 }
 
 /*
@@ -1737,9 +1718,11 @@ void ILI9341_GIGA_n::drawBitmap(int16_t x, int16_t y, const uint8_t *bitmap,
 
 // overwrite functions from class Print:
 
+
 size_t ILI9341_GIGA_n::write(uint8_t c) { return write(&c, 1); }
 
 size_t ILI9341_GIGA_n::write(const uint8_t *buffer, size_t size) {
+#ifdef LATER_TEXT
   // Lets try to handle some of the special font centering code that was done
   // for default fonts.
   if (_center_x_text || _center_y_text) {
@@ -1819,10 +1802,12 @@ size_t ILI9341_GIGA_n::write(const uint8_t *buffer, size_t size) {
       }
     }
   }
+#endif
   return size;
 }
 
 // Draw a character
+#ifdef LATER_TEXT
 void ILI9341_GIGA_n::drawChar(int16_t x, int16_t y, unsigned char c,
                            uint16_t fgcolor, uint16_t bgcolor, uint8_t size_x,
                            uint8_t size_y) {
@@ -3760,7 +3745,7 @@ void ILI9341_GIGA_n::disableScroll(void) { scrollEnable = false; }
 void ILI9341_GIGA_n::resetScrollBackgroundColor(uint16_t color) {
   scrollbgcolor = color;
 }
-
+#endif //LATER TEXT
 
 
 //=======================================================================

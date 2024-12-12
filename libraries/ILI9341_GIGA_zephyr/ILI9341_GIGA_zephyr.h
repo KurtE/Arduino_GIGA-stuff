@@ -73,8 +73,11 @@
 // Clipping for speed and size
 #ifndef DISABLE_ILI9341_FRAMEBUFFER
 // disable for first pass
-#define ENABLE_ILI9341_FRAMEBUFFER
+//#define ENABLE_ILI9341_FRAMEBUFFER
 #endif
+
+#define LATER_TEXT
+
 
 // Allow way to override using SPI
 
@@ -235,16 +238,14 @@ public:
   //   pspi: either  &SPI (6 pin spi connector) or &SPI1 (shield pins)
   //   CS: Chip select pin,  DC: Data/Command pin
   //   RST: optional reset pin
-  ILI9341_GIGA_n(SPIClass *pspi, uint8_t CS, uint8_t DC, uint8_t RST = 255);
+  //ILI9341_GIGA_n(SPIClass *pspi, uint8_t CS, uint8_t DC, uint8_t RST = 255);
+  ILI9341_GIGA_n(uint8_t cs_pin, uint8_t dc_pin, uint8_t rst_pin = 255);
   // Constructor
   //   CS: Chip select pin,  DC: Data/Command pin
   //   RST: optional reset pin
   //   MOSI, SCLK, MISO: I do nothing with these, don't think there are alternatives
-  ILI9341_GIGA_n(uint8_t CS, uint8_t DC, uint8_t RST = 255, uint8_t mosi = 11,
-              uint8_t sclk = 13, uint8_t miso = 12);
-  //   pspi: either  &SPI (6 pin spi connector) or &SPI1 (shield pins)
-  //   CS: Chip select pin,  DC: Data/Command pin
-  //   RST: optional reset pin
+  void setSPI(SPIClass &spi) {_pspi = &spi;}
+
 
   // Begin - main method to initialze the display.
   void begin(uint32_t spi_clock = ILI9341_SPICLOCK,
@@ -449,12 +450,13 @@ public:
   void drawRect(int16_t x, int16_t y, int16_t w, int16_t h, uint16_t color);
   int16_t getCursorX(void) const { return cursor_x; }
   int16_t getCursorY(void) const { return cursor_y; }
+#ifdef LATER_TEXT
   void setFont(const ILI9341_t3_font_t &f);
   void setFont(const GFXfont *f = NULL);
   void setFontAdafruit(void) { setFont(); }
   void drawFontChar(unsigned int c);
   void drawGFXFontChar(unsigned int c);
-
+ 
   void getTextBounds(const uint8_t *buffer, uint16_t len, int16_t x, int16_t y,
                      int16_t *x1, int16_t *y1, uint16_t *w, uint16_t *h);
   void getTextBounds(const char *string, int16_t x, int16_t y, int16_t *x1,
@@ -488,7 +490,7 @@ public:
   void disableScroll(void);
   void scrollTextArea(uint8_t scrollSize);
   void resetScrollBackgroundColor(uint16_t color);
-
+#endif
   // added support to use optional Frame buffer
   enum {
     ILI9341_DMA_INIT = 0x01,
@@ -516,30 +518,31 @@ public:
   void clearDMAInterruptStatus(uint8_t clear_flags);
 #endif
 
+#ifdef ENABLE_ILI9341_FRAMEBUFFER
   uint16_t *getFrameBuffer() { return _pfbtft; }
   uint32_t frameCount() { return _dma_frame_count; }
   uint16_t subFrameCount() { return _dma_sub_frame_count; }
   void setFrameCompleteCB(void (*pcb)(), bool fCallAlsoHalfDone = false);
   void updateChangedAreasOnly(bool updateChangedOnly) {
-#ifdef ENABLE_ILI9341_FRAMEBUFFER
     _updateChangedAreasOnly = updateChangedOnly;
-#endif
   }
-
+#endif
 
   SPIClass *_pspi = nullptr;
 
-  uint8_t _spi_num;         // Which buss is this spi on?
-  uint32_t _SPI_CLOCK;      // #define ILI9341_SPICLOCK 30000000
-  uint32_t _SPI_CLOCK_READ; //#define ILI9341_SPICLOCK_READ 2000000
+  uint8_t _spi_num = 0;         // Which buss is this spi on?
+  uint32_t _SPI_CLOCK = ILI9341_SPICLOCK;      // #define ILI9341_SPICLOCK 30000000
+  uint32_t _SPI_CLOCK_READ = ILI9341_SPICLOCK_READ; //#define ILI9341_SPICLOCK_READ 2000000
 
-  int16_t _width, _height; // Display w/h as modified by current rotation
-  int16_t cursor_x, cursor_y;
+  int16_t _width = ILI9341_TFTWIDTH;
+  int16_t _height = ILI9341_TFTHEIGHT; // Display w/h as modified by current rotation
+  int16_t cursor_x = 0; 
+  int16_t cursor_y = 0;
   bool _center_x_text = false;
   bool _center_y_text = false;
-  int16_t _clipx1, _clipy1, _clipx2, _clipy2;
-  int16_t _originx, _originy;
-  int16_t _displayclipx1, _displayclipy1, _displayclipx2, _displayclipy2;
+  int16_t _clipx1 = 0, _clipy1 = 0, _clipx2= ILI9341_TFTWIDTH, _clipy2 = ILI9341_TFTHEIGHT;
+  int16_t _originx = 0, _originy = 0;
+  int16_t _displayclipx1 = 0, _displayclipy1 = 0, _displayclipx2 = ILI9341_TFTWIDTH, _displayclipy2 = ILI9341_TFTHEIGHT;
   bool _invisible = false;
   bool _standard = true; // no bounding rectangle or origin set.
   
@@ -565,63 +568,65 @@ public:
     }
   }
 
-  int16_t scroll_x, scroll_y, scroll_width, scroll_height;
-  boolean scrollEnable,
-      isWritingScrollArea; // If set, 'wrap' text at right edge of display
+  int16_t scroll_x = 0, scroll_y = 0, scroll_width = 0, scroll_height = 0;
+  boolean scrollEnable = true,
+      isWritingScrollArea = true; // If set, 'wrap' text at right edge of display
 
-  uint16_t textcolor, textbgcolor, scrollbgcolor;
-  uint32_t textcolorPrexpanded, textbgcolorPrexpanded;
-  uint8_t textsize_x, textsize_y, rotation, textdatum;
-  boolean wrap; // If set, 'wrap' text at right edge of display
-  const ILI9341_t3_font_t *font;
+  uint16_t textcolor = 0xffff, textbgcolor = 0xffff, scrollbgcolor = 0;
+  uint32_t textcolorPrexpanded = 0, textbgcolorPrexpanded = 0;
+  uint8_t textsize_x = 1, textsize_y = 1; 
+  uint8_t rotation = 0;
+  uint8_t textdatum = 0;
+  boolean wrap = true; // If set, 'wrap' text at right edge of display
+  const ILI9341_t3_font_t *font = nullptr;
   // Anti-aliased font support
   uint8_t fontbpp = 1;
   uint8_t fontbppindex = 0;
   uint8_t fontbppmask = 1;
   uint8_t fontppb = 8;
-  uint8_t *fontalphalut;
+  uint8_t *fontalphalut = 0;
   float fontalphamx = 1;
 
-  uint32_t padX;
+  uint32_t padX = 0;
 
   // GFX Font support
   const GFXfont *gfxFont = nullptr;
   int8_t _gfxFont_min_yOffset = 0;
 
   // Opaque font chracter overlap?
-  unsigned int _gfx_c_last;
-  int16_t _gfx_last_cursor_x, _gfx_last_cursor_y;
+  unsigned int _gfx_c_last = 0;
+  int16_t _gfx_last_cursor_x = 0, _gfx_last_cursor_y = 0;
   int16_t _gfx_last_char_x_write = 0;
-  uint16_t _gfx_last_char_textcolor;
-  uint16_t _gfx_last_char_textbgcolor;
+  uint16_t _gfx_last_char_textcolor = 0;
+  uint16_t _gfx_last_char_textbgcolor = 0;
   bool gfxFontLastCharPosFG(int16_t x, int16_t y);
 
-  uint8_t _rst;
-  uint8_t _cs, _dc;
-  uint8_t pcs_data, pcs_command;
-  uint8_t _miso, _mosi, _sclk;
+  uint8_t _cs, _dc, _rst;
+  //uint8_t pcs_data, pcs_command;
+  //uint8_t _miso, _mosi, _sclk;
 
 ///////////////////////////////
 // BUGBUG:: reorganize this area better!
 //////////////////////////////
 
 // add support to allow only one hardware CS (used for dc)
-  __IO uint32_t *_dcBSRR; 
-  uint16_t _dcpinmask;
-  __IO uint32_t *_csBSRR; 
-  uint16_t _cspinmask;
+  //__IO uint32_t *_dcBSRR; 
+  //uint16_t _dcpinmask;
+  //__IO uint32_t *_csBSRR; 
+  //uint16_t _cspinmask;
 
 //  volatile uint8_t _data_sent_not_completed = 0;  // how much data has been sent that we are waiting for info
   volatile bool  _data_sent_since_last_transmit_complete = 0;  // have we sent anything since
 
+
+  int16_t _changed_min_x=0, _changed_max_x=0, _changed_min_y=0, _changed_max_y=0;
+  bool _updateChangedAreasOnly = false; // current default off,
 
 #ifdef ENABLE_ILI9341_FRAMEBUFFER
   // Add support for optional frame buffer
   uint16_t *_pfbtft;              // Optional Frame buffer
   uint8_t _use_fbtft;             // Are we in frame buffer mode?
   uint16_t *_we_allocated_buffer; // We allocated the buffer;
-  int16_t _changed_min_x, _changed_max_x, _changed_min_y, _changed_max_y;
-  bool _updateChangedAreasOnly = false; // current default off,
   void (*_frame_complete_callback)() = nullptr;
   bool _frame_callback_on_HalfDone = false;
 
@@ -670,12 +675,11 @@ public:
   }
   void endSPITransaction() __attribute__((always_inline)) {
     _pspi->endTransaction();
-      digitalWrite(_dc, LOW);
-    //digitalWrite(_cs, HIGH);
+    digitalWrite(_cs, HIGH);
   }
 
   // Start off stupid
-  uint8_t _dcpinAsserted;
+  uint8_t _dcpinAsserted = false;
 
 
   void setCommandMode() __attribute__((always_inline)) {
