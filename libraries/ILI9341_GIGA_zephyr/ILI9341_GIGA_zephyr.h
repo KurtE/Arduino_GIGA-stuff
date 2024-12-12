@@ -569,8 +569,8 @@ public:
   }
 
   int16_t scroll_x = 0, scroll_y = 0, scroll_width = 0, scroll_height = 0;
-  boolean scrollEnable = true,
-      isWritingScrollArea = true; // If set, 'wrap' text at right edge of display
+  boolean scrollEnable = false,
+      isWritingScrollArea = false; // If set, 'wrap' text at right edge of display
 
   uint16_t textcolor = 0xffff, textbgcolor = 0xffff, scrollbgcolor = 0;
   uint32_t textcolorPrexpanded = 0, textbgcolorPrexpanded = 0;

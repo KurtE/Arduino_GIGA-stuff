@@ -1817,7 +1817,20 @@ void ILI9341_GIGA_n::drawChar(int16_t x, int16_t y, unsigned char c,
       ((y + 8 * size_y - 1) < 0))   // Clip top   TODO: is this correct?
     return;
 
-  //	Serial.printf("drawchar %d %d %c %x %x %d %d\n", x, y, c, fgcolor,
+  static uint8_t debug_count = 50;
+  if (debug_count) {
+    Serial.print("drawchar "); Serial.print(c, HEX);
+    if (c >= ' ' && c <= '~') {
+      Serial.print("("); Serial.write(c); Serial.print(")");
+    }
+    Serial.print(" "); Serial.print(x, DEC);
+    Serial.print(" "); Serial.print(y, DEC);
+    Serial.print(" "); Serial.print(fgcolor, HEX);
+    Serial.print(" "); Serial.print(bgcolor, HEX);
+    Serial.print(" "); Serial.print(size_x, DEC);
+    Serial.print(" "); Serial.println(size_y, DEC);
+    debug_count--;
+  }
   //bgcolor, size_x, size_y);
   if (fgcolor == bgcolor) {
     // This transparent approach is only about 20% faster
