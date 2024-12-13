@@ -60,6 +60,10 @@
 #define HEIGHT ILI9341_TFTHEIGHT
 #define CBALLOC (ILI9341_TFTHEIGHT * ILI9341_TFTWIDTH * 2)
 
+
+uint16_t ILI9341_GIGA_n::s_row_buff[320]; // 
+
+
 // Constructor when using hardware ILI9241_KINETISK__pspi->  Faster, but must
 // use SPI pins
 // specific to each board type (e.g. 11,13 for Uno, 51,52 for Mega, etc.)
@@ -102,7 +106,6 @@ ILI9341_GIGA_n::ILI9341_GIGA_n(uint8_t cs_pin, uint8_t dc_pin, uint8_t rst_pin) 
 #endif
 
 }
-
 
 
 //=======================================================================
@@ -292,8 +295,6 @@ void ILI9341_GIGA_n::fillScreen(uint16_t color) {
   }
 }
 
-// fill a rectangle
-uint16_t row_buff[320]; // 
 void ILI9341_GIGA_n::fillRect(int16_t x, int16_t y, int16_t w, int16_t h,
                            uint16_t color) {
   // printf("\tfillRect(%d, %d, %d, %d, %x)\n", x, y, w, h, color);
@@ -359,8 +360,8 @@ void ILI9341_GIGA_n::fillRect(int16_t x, int16_t y, int16_t w, int16_t h,
     setDataMode();
     for (y = h; y > 0; y--) {
       #if 1
-      for (uint16_t i = 0; i < w; i++) row_buff[i] = color_swapped;
-        _pspi->transfer(row_buff, w * 2);
+      for (uint16_t i = 0; i < w; i++) s_row_buff[i] = color_swapped;
+        _pspi->transfer(s_row_buff, w * 2);
       #else
       for (x = w; x > 1; x--) {
         writedata16_cont(color);
@@ -1817,6 +1818,7 @@ void ILI9341_GIGA_n::drawChar(int16_t x, int16_t y, unsigned char c,
       ((y + 8 * size_y - 1) < 0))   // Clip top   TODO: is this correct?
     return;
 
+#if 0
   static uint8_t debug_count = 50;
   if (debug_count) {
     Serial.print("drawchar "); Serial.print(c, HEX);
@@ -1831,6 +1833,7 @@ void ILI9341_GIGA_n::drawChar(int16_t x, int16_t y, unsigned char c,
     Serial.print(" "); Serial.println(size_y, DEC);
     debug_count--;
   }
+#endif  
   //bgcolor, size_x, size_y);
   if (fgcolor == bgcolor) {
     // This transparent approach is only about 20% faster
@@ -3830,11 +3833,28 @@ void ILI9341_GIGA_n::updateScreen(void) // call to say update the screen now.
           &_pfbtft[(ILI9341_TFTWIDTH * ILI9341_TFTHEIGHT) - 1]; // setup
       uint16_t *pftbft = _pfbtft;
 
+      #if 1
+      setDataMode();
+
+      // Quick and dirty
+      uint16_t c = 0;
+      while (pftbft <= pfbtft_end) {
+        uint16_t color = *pftbft++;
+        s_row_buff[c++] = (color >> 8) | ((color & 0xff) << 8);  // swap the bytes...
+        if (c == (sizeof(s_row_buff) / sizeof(s_row_buff[0]))) {
+          _pspi->transfer(s_row_buff, c * 2);
+          c = 0;
+        }
+      }
+      if (c != 0) _pspi->transfer(s_row_buff, c * 2);
+      #else
+
       // Quick write out the data;
       while (pftbft < pfbtft_end) {
         writedata16_cont(*pftbft++);
       }
       writedata16_last(*pftbft);
+      #endif
     } else {
       // setup just to output the clip rectangle area anded with updated area if
       // enabled

@@ -73,7 +73,7 @@
 // Clipping for speed and size
 #ifndef DISABLE_ILI9341_FRAMEBUFFER
 // disable for first pass
-//#define ENABLE_ILI9341_FRAMEBUFFER
+#define ENABLE_ILI9341_FRAMEBUFFER
 #endif
 
 #define LATER_TEXT
@@ -891,6 +891,11 @@ public:
                     int32_t y, uint32_t repeat);
   void drawFontPixel(uint8_t alpha, uint32_t x, uint32_t y);
   uint32_t fetchpixel(const uint8_t *p, uint32_t index, uint32_t x);
+
+  // BUGBUG:: Maybe better way later
+  static uint16_t s_row_buff[320]; // 
+
+
 };
 
 #ifndef ILI9341_swap

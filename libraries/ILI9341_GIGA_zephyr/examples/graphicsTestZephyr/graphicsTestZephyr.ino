@@ -21,7 +21,7 @@
 #define TFT_RST 8
 #define TFT_CS 10
 
-//#define USE_FRAME_BUFFER 1
+#define USE_FRAME_BUFFER 1
 
 // forward references:
 extern unsigned long testFillScreen();
@@ -38,6 +38,7 @@ extern unsigned long testRoundRects();
 extern unsigned long testFilledRoundRects();
 
 #if USE_FRAME_BUFFER
+extern void  WaitForUserInput();
 extern unsigned long testFilledRectsFB(uint16_t color1, uint16_t color2);
 extern unsigned long testFilledRoundRectsFB();
 #endif
@@ -416,7 +417,11 @@ unsigned long testFilledRectsFB(uint16_t color1, uint16_t color2) {
                 cx = tft.width()  / 2 - 1,
                 cy = tft.height() / 2 - 1;
 
-  tft.useFrameBuffer(1);
+  if (!tft.useFrameBuffer(1) ) {
+    Serial.println("\n*** Failed to use Frame Buffer ***");
+    WaitForUserInput();
+  }
+
   tft.fillScreen(ILI9341_BLACK);
   start = micros();
   n = min(tft.width(), tft.height());
