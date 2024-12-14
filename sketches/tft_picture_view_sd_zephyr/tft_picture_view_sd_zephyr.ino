@@ -118,7 +118,7 @@ elapsedMillis emDisplayed;
 #define DISPLAY_IMAGES_TIME 2500
 
 // Options file information
-static const PROGMEM char options_file_name[] = "/usb/PictureViewOptions.ini";
+static const PROGMEM char options_file_name[] = "PictureViewOptions.ini";
 int g_debug_output = 0;
 int g_stepMode = 0;
 int g_BMPScale = -1;
@@ -170,7 +170,7 @@ uint8_t g_devices_started = 0;  // no devices started
 uint8_t g_current_device = 0;
 
 
-//extern bool ProcessOptionsFile(FILE *optfile);
+extern bool ProcessOptionsFile(FsFile *optfile);
 extern void ShowAllOptionValues();
 extern void bmpDraw(FsFile &bmpFile, const char *filename, bool fErase);
 extern void processJPGFile(FsFile &jpgFile, const char *name, bool fErase);
@@ -313,11 +313,11 @@ void setup(void) {
     g_jpg_scale_y_above[1] = g_tft_height * 3;
     g_jpg_scale_y_above[2] = g_tft_height * 6;
     g_jpg_scale_y_above[3] = g_tft_height * 12;
-#if 0
-    FILE *optionsFile = fopen(options_file_name, "r+");
-    if (optionsFile) {
-        ProcessOptionsFile(optionsFile);
-        fclose(optionsFile);
+#if 1
+    FsFile optionsFile;
+    if (optionsFile.open(options_file_name, FILE_READ)) {
+        ProcessOptionsFile(&optionsFile);
+        optionsFile.close();
     }
 #endif    
     ShowAllOptionValues();
@@ -365,10 +365,14 @@ void loop() {
             name_len = imageFile.getName(file_name, sizeof(file_name));
 
             if ((strcmp(&file_name[name_len - 4], ".bmp") == 0) || (strcmp(&file_name[name_len - 4], ".BMP") == 0)) bmp_file = true;
-            if ((strcmp(&file_name[name_len - 4], ".jpg") == 0) || (strcmp(&file_name[name_len - 4], ".JPG") == 0)) jpg_file = true;
-            if (stricmp(&file_name[name_len - 4], ".bmp") == 0) bmp_file = true;
+            #ifdef __JPEGDEC__
+            //if ((strcmp(&file_name[name_len - 4], ".jpg") == 0) || (strcmp(&file_name[name_len - 4], ".JPG") == 0)) jpg_file = true;
             if (stricmp(&file_name[name_len - 4], ".jpg") == 0) jpg_file = true;
+            #endif
+            if (stricmp(&file_name[name_len - 4], ".bmp") == 0) bmp_file = true;
+            #ifdef __PNGDEC__
             if (stricmp(&file_name[name_len - 4], ".png") == 0) png_file = true;
+            #endif
             //if (stricmp(name, options_file_name) == 0) ProcessOptionsFile(imageFile);
             if (bmp_file || jpg_file || png_file) break;
         }
@@ -512,13 +516,13 @@ static const PROGMEM key_name_value_t keyNameValues[] = {
     { "ImageTimeMS", &g_display_image_time }
 };
 
-int ReadFileChar(FILE *f) {
-    char c;
-    size_t ich = fread(&c, 1, 1, f);
-    return ich ? c : -1;
+int ReadFileChar(FsFile *f) {
+    //char c;
+    if (f->available()) return f->read();
+    return -1;
 }
 
-bool ReadOptionsLine(FILE *optFile, char *key_name, uint8_t sizeof_key, int &key_value) {
+bool ReadOptionsLine(FsFile *optFile, char *key_name, uint8_t sizeof_key, int &key_value) {
     int ch;
 
     key_value = 0;
@@ -572,8 +576,8 @@ bool ReadOptionsLine(FILE *optFile, char *key_name, uint8_t sizeof_key, int &key
 }
 
 
-#if 0
-bool ProcessOptionsFile(FILE *optfile) {
+#if 1
+bool ProcessOptionsFile(FsFile *optfile) {
     if (!optfile) return false;
     int key_value;
     char key_name[20];

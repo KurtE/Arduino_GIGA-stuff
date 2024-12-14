@@ -3843,7 +3843,7 @@ void ILI9341_GIGA_n::updateScreen(void) // call to say update the screen now.
       while (pftbft <= pfbtft_end) {
         uint16_t pixel_color = *pftbft++;
         s_row_buff[c++] = (pixel_color >> 8) | ((pixel_color & 0xff) << 8);  // swap the bytes...
-        if (c == 256) {
+        if (c == 320) {
           _pspi->transfer(s_row_buff, c * 2);
           c = 0;
         }
