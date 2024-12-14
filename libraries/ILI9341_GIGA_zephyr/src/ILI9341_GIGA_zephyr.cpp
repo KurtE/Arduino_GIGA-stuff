@@ -3792,6 +3792,8 @@ uint8_t ILI9341_GIGA_n::useFrameBuffer(
       _pfbtft = (uint16_t *)(((uintptr_t)_we_allocated_buffer + 32) &
                              ~((uintptr_t)(31)));
       memset(_pfbtft, 0, CBALLOC);
+      Serial.print("Allocated FB: ");
+      Serial.println((uint32_t)_pfbtft, HEX);
     }
     _use_fbtft = 1;
     clearChangedRange(); // make sure the dirty range is updated.
@@ -3826,6 +3828,7 @@ void ILI9341_GIGA_n::updateScreen(void) // call to say update the screen now.
       // Doing full window.
       setAddr(0, 0, _width - 1, _height - 1);
       writecommand_cont(ILI9341_RAMWR);
+      setDataMode();
 
       // BUGBUG doing as one shot.  Not sure if should or not or do like
       // main code and break up into transactions...
@@ -3834,14 +3837,13 @@ void ILI9341_GIGA_n::updateScreen(void) // call to say update the screen now.
       uint16_t *pftbft = _pfbtft;
 
       #if 1
-      setDataMode();
 
       // Quick and dirty
       uint16_t c = 0;
       while (pftbft <= pfbtft_end) {
-        uint16_t color = *pftbft++;
-        s_row_buff[c++] = (color >> 8) | ((color & 0xff) << 8);  // swap the bytes...
-        if (c == (sizeof(s_row_buff) / sizeof(s_row_buff[0]))) {
+        uint16_t pixel_color = *pftbft++;
+        s_row_buff[c++] = (pixel_color >> 8) | ((pixel_color & 0xff) << 8);  // swap the bytes...
+        if (c == 256) {
           _pspi->transfer(s_row_buff, c * 2);
           c = 0;
         }

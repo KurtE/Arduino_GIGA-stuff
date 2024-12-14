@@ -443,7 +443,12 @@ unsigned long testFilledRoundRectsFB() {
   int           i, i2,
                 cx = tft.width()  / 2 - 1,
                 cy = tft.height() / 2 - 1;
-  tft.useFrameBuffer(1);
+
+  if (!tft.useFrameBuffer(1) ) {
+    Serial.println("\n*** Failed to use Frame Buffer ***");
+    WaitForUserInput();
+  }
+
 
   tft.fillScreen(ILI9341_BLACK);
   start = micros();
