@@ -51,6 +51,8 @@
 #define TFT_RST 8
 #define TFT_CS 10
 ILI9341_GIGA_n tft(TFT_CS, TFT_DC, TFT_RST);
+#define TFT_SPI SPI1
+#define TFT_SPEED 20000000u
 
 
 
@@ -168,7 +170,7 @@ uint32_t g_WRCount = 0;  // debug count how many time writeRect called
 
 uint8_t g_devices_started = 0;  // no devices started
 uint8_t g_current_device = 0;
-
+bool use_zephyr_update_hacks = false;
 
 extern bool ProcessOptionsFile(FsFile *optfile);
 extern void ShowAllOptionValues();
@@ -181,7 +183,7 @@ extern uint16_t read16(FsFile &f);
 extern uint32_t read32(FsFile &f);
 extern void ScaleUpWriteClippedRect(int row, int image_width, uint16_t *usPixels);
 extern void ScaleDownWriteClippedRect(int row, int image_width, uint16_t *usPixels);
-
+extern void UpdateScreen();
 #ifdef __JPEGDEC__
 extern int32_t myReadJPG(JPEGFILE *pjpegfile, uint8_t *buffer, int32_t length);
 extern int32_t mySeekJPG(JPEGFILE *pjpegfile, int32_t position);
@@ -223,8 +225,8 @@ void setup(void) {
 #endif
 
     Serial.println("*** start up ILI9341 ***");
-    tft.setSPI(SPI1);  // temporary...
-    tft.begin(20000000u);
+    tft.setSPI(TFT_SPI);  // temporary...
+    tft.begin(TFT_SPEED);
     tft.setRotation(1);
 
     tft.fillScreen(RED);
@@ -319,7 +321,7 @@ void setup(void) {
         ProcessOptionsFile(&optionsFile);
         optionsFile.close();
     }
-#endif    
+#endif
     ShowAllOptionValues();
 
     tft.useFrameBuffer(true);
@@ -365,14 +367,14 @@ void loop() {
             name_len = imageFile.getName(file_name, sizeof(file_name));
 
             if ((strcmp(&file_name[name_len - 4], ".bmp") == 0) || (strcmp(&file_name[name_len - 4], ".BMP") == 0)) bmp_file = true;
-            #ifdef __JPEGDEC__
+#ifdef __JPEGDEC__
             //if ((strcmp(&file_name[name_len - 4], ".jpg") == 0) || (strcmp(&file_name[name_len - 4], ".JPG") == 0)) jpg_file = true;
             if (stricmp(&file_name[name_len - 4], ".jpg") == 0) jpg_file = true;
-            #endif
+#endif
             if (stricmp(&file_name[name_len - 4], ".bmp") == 0) bmp_file = true;
-            #ifdef __PNGDEC__
+#ifdef __PNGDEC__
             if (stricmp(&file_name[name_len - 4], ".png") == 0) png_file = true;
-            #endif
+#endif
             //if (stricmp(name, options_file_name) == 0) ProcessOptionsFile(imageFile);
             if (bmp_file || jpg_file || png_file) break;
         }
@@ -390,7 +392,7 @@ void loop() {
             if (bmp_file) {
                 bmpDraw(imageFile, file_name, true);
             }
-#endif            
+#endif
 #ifdef __JPEGDEC__
 #if defined(PROCESS_BMP_FILES)
             else if (jpg_file) {
@@ -406,7 +408,7 @@ void loop() {
             else if (png_file) {
 #else
             if (png_file) {
-#endif              
+#endif
                 processPNGFile(imageFile, file_name, true);
             }
 #endif
@@ -431,7 +433,10 @@ void loop() {
     //---------------------------------------------------------------------------
     if (g_fast_mode || g_stepMode || (emDisplayed >= (uint32_t)g_display_image_time)) {
         if (g_picture_loaded) {
-            tft.updateScreen();
+            Serial.print("US:");
+            elapsedMillis emUpdate = 0;
+            UpdateScreen();
+            Serial.print((uint32_t)emUpdate);
         }
         //---------------------------------------------------------------------------
         // Process any keyboard input.
@@ -457,6 +462,11 @@ void loop() {
                 if (ch == 'd') g_debug_output = !g_debug_output;
                 else if (ch == 's') g_stepMode = !g_stepMode;
                 else if (ch == 'l') listFiles();
+                else if (ch == 'z') {
+                    use_zephyr_update_hacks = !use_zephyr_update_hacks;
+                    Serial.print("\n*** Use Zephyr SPI for Update Screen: ");
+                    Serial.println(use_zephyr_update_hacks);
+                }
                 ch = Serial.read();
             }
         }
@@ -475,6 +485,36 @@ int stricmp(const char *s1, const char *s2) {
     }
     return (*s1 == 0 && *s2 == 0) ? 0 : -1;
 }
+
+const struct device *spi_dev = nullptr;
+struct spi_config config16;
+struct spi_buf tx_buf = { .buf = nullptr, .len = 320 * 240 * 2 };
+const struct spi_buf_set tx_buf_set = { .buffers = &tx_buf, .count = 1 };
+void UpdateScreen() {
+    if (use_zephyr_update_hacks) {
+        if (spi_dev == nullptr) {
+            uint32_t *p = (uint32_t *)&TFT_SPI;
+            spi_dev = (const struct device *)p[1];
+            memset((void*)&config16, 0, sizeof(config16));
+            config16.frequency = TFT_SPEED;
+            config16.operation = SPI_WORD_SET(16) | SPI_TRANSFER_MSB;
+            tx_buf.buf = tft.getFrameBuffer();
+        }
+        tft.beginSPITransaction(SPI_CLOCK);
+        tft.setAddr(0, 0, tft.width() - 1, tft.height() - 1);
+        tft.writecommand_cont(ILI9341_RAMWR);
+        tft.setDataMode();
+        int ret = spi_transceive(spi_dev, &config16, &tx_buf_set, nullptr);
+        tft.endSPITransaction();
+        if (ret < 0) {
+            Serial.print("US spi_transceive failed: ");
+            Serial.println(ret);
+        }
+    } else {
+        tft.updateScreen();
+    }
+}
+
 
 //****************************************************************************
 // forward function definitions.
@@ -1292,5 +1332,5 @@ void printSpaces(int num) {
     }
   }
 #else
-    void listFiles() {}
+void listFiles() {}
 #endif
