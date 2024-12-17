@@ -6,7 +6,7 @@
 #include <SPI.h>
 
 #include <SdFat.h>
-
+#include <sdios.h>
 #include <elapsedMillis.h>
 
 #define MAX_FILENAME_LEN 256
@@ -76,6 +76,132 @@ int g_tft_width = 0;
 int g_tft_height = 0;
 
 
+#if SPI_DRIVER_SELECT == 3  // Must be set in SdFat/SdFatConfig.h
+// This is a simple driver based on the the standard SPI.h library.
+// You can write a driver entirely independent of SPI.h.
+// It can be optimized for your board or a different SPI port can be used.
+// The driver must be derived from SdSpiBaseClass.
+// See: SdFat/src/SpiDriver/SdSpiBaseClass.h
+class ZephyrSDSpiClass : public SdSpiBaseClass {
+  public:
+    ZephyrSDSpiClass(SPIClass &spi)
+        : _pspi(&spi) {}
+
+    // Activate SPI hardware with correct speed and mode.
+    void activate() {
+        _pspi->beginTransaction(m_spiSettings);
+    }
+    // Initialize the SPI bus.
+    void begin(SdSpiConfig config) {
+        _pspi->begin();
+        uint32_t *p = (uint32_t *)_pspi;
+        _spi_dev = (const struct device *)p[1];
+        memset((void *)&_config, 0, sizeof(_config));
+        _config.operation = SPI_WORD_SET(8) | SPI_TRANSFER_MSB;
+        _config.frequency = config.maxSck;
+    }
+    // Deactivate SPI hardware.
+    void deactivate() {
+        _pspi->endTransaction();
+    }
+    // Receive a byte.
+    uint8_t receive() {
+        return _pspi->transfer(0XFF);
+    }
+    // Receive multiple bytes.
+    // Replace this function if your board has multiple byte receive.
+    uint8_t receive(uint8_t *buf, size_t count) {
+#if 0
+        for (size_t i = 0; i < count; i++) {
+            buf[i] = SPI1.transfer(0XFF);
+        }
+#else
+        uint8_t tx_dummy_buf[128];
+        struct spi_buf tx_buf;
+        struct spi_buf_set tx_buf_set = { .buffers = &tx_buf, .count = 1 };
+
+        memset(tx_dummy_buf, 0xff, sizeof(tx_dummy_buf));
+        size_t cb_transfer = sizeof(tx_dummy_buf); 
+        while (count) {
+          if (count < cb_transfer) cb_transfer = count;
+          tx_buf.buf = tx_dummy_buf;
+          tx_buf.len = cb_transfer;
+          _buf.buf = (void *)buf;
+          _buf.len = cb_transfer;
+          int ret =  spi_transceive(_spi_dev, &_config, &tx_buf_set, &_buf_set);
+          count -= cb_transfer;
+          buf += cb_transfer;
+        }
+
+/*        static uint8_t debug_count = 0;
+        if (debug_count) {
+          Serial.print("\t ##### receive: 0x"); 
+          Serial.print((uint32_t)&_buf_set, HEX); 
+          Serial.print(" "); Serial.print((uint32_t)_buf_set.buffers, HEX);
+          Serial.print(" "); Serial.print(_buf_set.count);
+          Serial.print(" "); Serial.print((uint32_t)&_buf, HEX);
+          Serial.print(" "); Serial.print((uint32_t)_buf.buf, HEX);
+          Serial.print(" "); Serial.println(_buf.len);
+        }        
+        int ret =  spi_read(_spi_dev, &_config, &_buf_set);
+        if (debug_count) {
+          debug_count--;
+          Serial.print("Return: ");
+          Serial.println(ret);
+        }
+*/
+#endif
+        return 0;
+    }
+    // Send a byte.
+    void send(uint8_t data) {
+        _pspi->transfer(data);
+    }
+    // Send multiple bytes.
+    // Replace this function if your board has multiple byte send.
+    void send(const uint8_t *buf, size_t count) {
+#if 0
+        for (size_t i = 0; i < count; i++) {
+            SPI1.transfer(buf[i]);
+        }
+#else
+        _buf.buf = (void *)buf;
+        _buf.len = count;
+        static uint8_t debug_count = 2;
+        if (debug_count) {
+          debug_count--;
+          Serial.print("\t ##### send: 0x"); 
+          Serial.print((uint32_t)&_buf_set, HEX); 
+          Serial.print(" "); Serial.print((uint32_t)_buf_set.buffers, HEX);
+          Serial.print(" "); Serial.print(_buf_set.count);
+          Serial.print(" "); Serial.print((uint32_t)&_buf, HEX);
+          Serial.print(" "); Serial.print((uint32_t)_buf.buf, HEX);
+          Serial.print(" "); Serial.println(_buf.len);
+        }        
+        /*int ret = */ spi_transceive(_spi_dev, &_config, &_buf_set, nullptr);
+#endif
+    }
+    // Save SPISettings for new max SCK frequency
+    void setSckSpeed(uint32_t maxSck) {
+        m_spiSettings = SPISettings(maxSck, MSBFIRST, SPI_MODE0);
+        _config.frequency = maxSck;
+        _config.operation = SPI_WORD_SET(8) | SPI_TRANSFER_MSB;
+    }
+
+  private:
+    SPIClass *_pspi = &SPI1;
+    SPISettings m_spiSettings;
+    const struct device *_spi_dev;
+    spi_config _config;
+    struct spi_buf _buf;
+    struct spi_buf_set _buf_set = { .buffers = &_buf, .count = 1 };
+
+} zspi(SPI1);
+
+#define SD_CONFIG SdSpiConfig(CS_SD, SHARED_SPI, SPI_CLOCK, &zspi)
+#else
+#define SD_CONFIG SdSpiConfig(CS_SD, SHARED_SPI, SPI_CLOCK, &SPI1)
+#endif
 // SD_FAT_TYPE = 0 for SdFat/File as defined in SdFatConfig.h,
 // 1 for FAT16/FAT32, 2 for exFAT, 3 for FAT16/FAT32 and exFAT.
 #define SD_FAT_TYPE 3
@@ -88,7 +214,7 @@ int g_tft_height = 0;
 //#endif  // SDCARD_SS_PIN
 
 // Try max SPI clock for an SD. Reduce SPI_CLOCK if errors occur.
-#define SPI_CLOCK SD_SCK_MHZ(30)
+#define SPI_CLOCK SD_SCK_MHZ(50)
 
 // Try to select the best SD card configuration.
 //#if HAS_SDIO_CLASS
@@ -96,17 +222,19 @@ int g_tft_height = 0;
 //#elif ENABLE_DEDICATED_SPI
 //#define SD_CONFIG SdSpiConfig(CS_SD, DEDICATED_SPI, SPI_CLOCK)
 //#else  // HAS_SDIO_CLASS
-#define SD_CONFIG SdSpiConfig(CS_SD, SHARED_SPI, SPI_CLOCK, &SPI1)
+//#define SD_CONFIG SdSpiConfig(CS_SD, SHARED_SPI, SPI_CLOCK, &zspi)
 //#endif  // HAS_SDIO_CLASS
 
 
 //-----------------------------------
 // SD specific
 //-----------------------------------
-#ifdef CS_SD
 SdFs SD;
 FsFile root_SD;
-#endif
+
+
+
+
 
 //-----------------------------------
 //-----------------------------------
@@ -170,7 +298,7 @@ uint32_t g_WRCount = 0;  // debug count how many time writeRect called
 
 uint8_t g_devices_started = 0;  // no devices started
 uint8_t g_current_device = 0;
-bool use_zephyr_update_hacks = false;
+bool use_zephyr_update_hacks = true;
 
 extern bool ProcessOptionsFile(FsFile *optfile);
 extern void ShowAllOptionValues();
@@ -495,7 +623,7 @@ void UpdateScreen() {
         if (spi_dev == nullptr) {
             uint32_t *p = (uint32_t *)&TFT_SPI;
             spi_dev = (const struct device *)p[1];
-            memset((void*)&config16, 0, sizeof(config16));
+            memset((void *)&config16, 0, sizeof(config16));
             config16.frequency = TFT_SPEED;
             config16.operation = SPI_WORD_SET(16) | SPI_TRANSFER_MSB;
             tx_buf.buf = tft.getFrameBuffer();
