@@ -901,7 +901,7 @@ public:
 #ifndef ILI9341_swap
 #define ILI9341_swap(a, b)                                                     \
   {                                                                            \
-    typeof(a) t = a;                                                           \
+    /*typeof(a)*/ int16_t t = a;                                                           \
     a = b;                                                                     \
     b = t;                                                                     \
   }
