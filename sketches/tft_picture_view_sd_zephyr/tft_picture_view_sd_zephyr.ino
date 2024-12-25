@@ -129,7 +129,7 @@ class ZephyrSDSpiClass : public SdSpiBaseClass {
           tx_buf.len = cb_transfer;
           _buf.buf = (void *)buf;
           _buf.len = cb_transfer;
-          int ret =  spi_transceive(_spi_dev, &_config, &tx_buf_set, &_buf_set);
+          /*int ret = */ spi_transceive(_spi_dev, &_config, &tx_buf_set, &_buf_set);
           count -= cb_transfer;
           buf += cb_transfer;
         }
@@ -365,8 +365,14 @@ void setup(void) {
     tft.fillScreen(BLUE);
     delay(500);
 
+    Serial.print("Fill Scren 3 times ms: ");
+    elapsedMillis emFill;
+    tft.fillScreen(RED);
+    tft.fillScreen(GREEN);
+    tft.fillScreen(BLUE);
     g_tft_width = tft.width();
     g_tft_height = tft.height();
+    Serial.println(emFill);
 
     tft.fillScreen(BLUE);
 

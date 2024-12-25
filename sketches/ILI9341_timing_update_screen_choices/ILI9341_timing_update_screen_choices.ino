@@ -31,6 +31,13 @@ ILI9341_GIGA_n tft(TFT_CS, TFT_DC, TFT_RST);
 #define GREEN 0x07E0
 #define RED 0xf800
 
+class wrapped_SPI : public arduino::ZephyrSPI {
+  public:
+    const struct device *SPIDevice() {return spi_dev;}
+    struct spi_config *getConfig()  {return &config;}
+    struct spi_config *getConfig16() {return &config16;}
+};
+
 
 //****************************************************************************
 // Setup
@@ -76,10 +83,26 @@ void setup(void) {
 
     // setup to use zephyr spi
     uint32_t *p = (uint32_t *)&TFT_SPI;
+    Serial.print("PSPI: 0x");
+    Serial.println((uint32_t)p, HEX);
     spi_dev = (const struct device *)p[1];
     memset((void *)&config16, 0, sizeof(config16));
     config16.frequency = TFT_SPEED;
     config16.operation = SPI_WORD_SET(16) | SPI_TRANSFER_MSB;
+    Serial.print("Get zspi and config by hack: 0x");
+    Serial.print((uint32_t)spi_dev, HEX);
+    Serial.print(" 0x");
+    Serial.println((uint32_t)&p[2], HEX);
+
+    Serial.print("Try SubClass: 0x");
+    wrapped_SPI *pwspi = (wrapped_SPI*)&TFT_SPI;
+    Serial.print((uint32_t)pwspi->SPIDevice(), HEX);
+    Serial.print(" 0x");
+    Serial.print((uint32_t)pwspi->getConfig(), HEX);
+    Serial.print(" 0x");
+    Serial.println((uint32_t)pwspi->getConfig16(), HEX);
+
+
     tx_buf.buf = pframeBuffer = tft.getFrameBuffer();
 }
 
@@ -88,6 +111,11 @@ void setup(void) {
 //****************************************************************************
 uint8_t update_mode = 0;
 
+volatile bool spi_async_active = false;
+
+void spi_cb(const struct device *dev, int result, void *data) {
+  spi_async_active = false;
+}
 
 void loop() {
     switch (update_mode) {
@@ -95,6 +123,7 @@ void loop() {
         case 1: Serial.print("SPI.transfer: "); break;
         case 2: Serial.print("SPI.transfer16: "); break;
         case 3: Serial.print("Zephyr: "); break;
+        case 4: Serial.print("Zephyr Async: "); break;
     }
     elapsedMillis em;
     tft.fillScreen(BLUE);
@@ -109,11 +138,18 @@ void loop() {
     UpdateScreen();
     Serial.println((uint32_t)em);
     update_mode++;
-    if (update_mode > 3) {
+    if (update_mode > 4) {
         update_mode = 0;
         Serial.println();
     }
     delay(250);
+    if (Serial.available()) {
+      while (Serial.read() != -1);
+      Serial.println("Paused");
+      while (Serial.read() == -1);
+      while (Serial.read() != -1);
+
+    }
 }
 
 
@@ -137,8 +173,17 @@ void UpdateScreen() {
             for (uint32_t i = 0; i < frame_size; i++) {
                 TFT_SPI.transfer16(pframeBuffer[i]);
             }
-        } else {
+        } else if (update_mode == 3) {
             spi_transceive(spi_dev, &config16, &tx_buf_set, nullptr);
+        } else {
+            spi_async_active = true;
+            int iRet;
+            if ((iRet = spi_transceive_cb(spi_dev, &config16, &tx_buf_set, nullptr, &spi_cb, &tft)) < 0) {
+              Serial.print("spi_transceiveCB failed:");
+              Serial.println(iRet);
+            } else {
+              while (spi_async_active) {}
+            }
         }
         tft.endSPITransaction();
     }

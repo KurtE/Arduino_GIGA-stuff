@@ -505,30 +505,31 @@ public:
   void freeFrameBuffer(void); // explicit call to release the buffer
   void updateScreen(void);    // call to say update the screen now.
 
-#if 0
-  bool updateScreenAsync(bool update_cont = false); // call to say update the
-                                                    // screen optinoally turn
-                                                    // into continuous mode.
-  void waitUpdateAsyncComplete(void);
-  void endUpdateAsync(); // Turn of the continueous mode flag
-  void abortUpdateAsync(); // Use this if there is a hang...
-  void dumpDMASettings();
-  void setSPIDataSize(uint8_t datasize);
-  uint8_t getDMAInterruptStatus();
-  void clearDMAInterruptStatus(uint8_t clear_flags);
-#endif
 
 #ifdef ENABLE_ILI9341_FRAMEBUFFER
   uint16_t *getFrameBuffer() { return _pfbtft; }
   uint32_t frameCount() { return _dma_frame_count; }
-  uint16_t subFrameCount() { return _dma_sub_frame_count; }
+  uint16_t subFrameCount() { return 0 /*_dma_sub_frame_count*/; }
   void setFrameCompleteCB(void (*pcb)(), bool fCallAlsoHalfDone = false);
   void updateChangedAreasOnly(bool updateChangedOnly) {
     _updateChangedAreasOnly = updateChangedOnly;
   }
+  bool updateScreenAsync(bool update_cont = false); // call to say update the
+                                                    // screen optinoally turn
+                                                    // into continuous mode.
+  boolean asyncUpdateActive(void);
+  void waitUpdateAsyncComplete(void);
+//  void endUpdateAsync(); // Turn of the continueous mode flag
+//  void abortUpdateAsync(); // Use this if there is a hang...
+//  void dumpDMASettings();
+//  void setSPIDataSize(uint8_t datasize);
+//  uint8_t getDMAInterruptStatus();
+//  void clearDMAInterruptStatus(uint8_t clear_flags);
 #endif
 
   SPIClass *_pspi = nullptr;
+  const struct device *_spi_dev = nullptr;
+  struct spi_config _config16;
 
   uint8_t _spi_num = 0;         // Which buss is this spi on?
   uint32_t _SPI_CLOCK = ILI9341_SPICLOCK;      // #define ILI9341_SPICLOCK 30000000
@@ -632,16 +633,16 @@ public:
 
   static ILI9341_GIGA_n *_dmaActiveDisplay[2]; // Use pointer to this as a way to get
                                          // back to object...
-  volatile uint8_t _dma_state = 0;            // DMA status
+  //volatile uint8_t _dma_state = 0;            // DMA status
   volatile uint32_t _dma_frame_count = 0;     // Can return a frame count...
-  volatile uint16_t _dma_sub_frame_count = 0; // Can return a frame count...
-
+  //volatile uint16_t _dma_sub_frame_count = 0; // Can return a frame count...
+  volatile bool _async_update_active = false; 
   // GIGA DMA stuff - WIP
 
-  static void dmaInterrupt(void);
-  static void dmaInterrupt1(void);
-
-  void process_dma_interrupt(void);
+  //static void dmaInterrupt(void);
+  //static void dmaInterrupt1(void);
+  static void async_callback(const struct device *dev, int result, void *data);
+  void process_async_callback(void);
 #endif
   void charBounds(char c, int16_t *x, int16_t *y, int16_t *minx, int16_t *miny,
                   int16_t *maxx, int16_t *maxy);
@@ -901,7 +902,7 @@ public:
 #ifndef ILI9341_swap
 #define ILI9341_swap(a, b)                                                     \
   {                                                                            \
-    /*typeof(a)*/ int16_t t = a;                                                           \
+    /*typeof(a)*/int16_t t = a;                                                           \
     a = b;                                                                     \
     b = t;                                                                     \
   }

@@ -23,13 +23,13 @@
 
 #define USE_FRAME_BUFFER 1
 
-ILI9341_GIGA_n tft(&SPI1, TFT_CS, TFT_DC, TFT_RST);
+//ILI9341_GIGA_n tft(&SPI1, TFT_CS, TFT_DC, TFT_RST);
+ILI9341_GIGA_n tft(TFT_CS, TFT_DC, TFT_RST);
 
 #define DEBUG_PIN 0
 
 // needing forward references?
 extern unsigned long testFillScreen();
-#if 0
 extern unsigned long testText();
 extern unsigned long testLines(uint16_t color) ;
 extern unsigned long testFastLines(uint16_t color1, uint16_t color2);
@@ -43,34 +43,27 @@ extern unsigned long testRoundRects();
 extern unsigned long testFilledRoundRects();
 extern unsigned long testFilledRectsFB(uint16_t color1, uint16_t color2);
 extern unsigned long testFilledRoundRectsFB() ;
-#endif
-extern void  WaitForUserInput();
+extern void WaitForUserInput();
 
 void setup() {
-  Serial.begin(9600);
-  while (!Serial && millis() < 5000) ; // wait for Arduino Serial Monitor
-  delay(500);
-  Serial.println("ILI9341 Test!");
-  pinMode(DEBUG_PIN, OUTPUT);
-  WaitForUserInput();
-  tft.begin(30000000);
-  Serial.println("after TFT.begin");
-  WaitForUserInput();
-  
-  tft.fillScreen(ILI9341_RED);
-  delay(1000);
-  tft.fillScreen(ILI9341_GREEN);
-  delay(1000);
-  tft.fillScreen(ILI9341_BLUE);
-  delay(1000);
+    Serial.begin(9600);
+    while (!Serial && millis() < 5000)
+        ;  // wait for Arduino Serial Monitor
+    delay(500);
+    Serial.println("ILI9341 Test!");
+    pinMode(DEBUG_PIN, OUTPUT);
+    tft.setSPI(SPI1);  // temporary...
+    tft.begin(30000000);
+    Serial.println("after TFT.begin");
 
-#if 0
-#ifdef  SPI0_DISP2
-  Serial.println("Reset pin 10 to output");
-  //  pinMode(10, INPUT_PULLUP);
-#endif
+    tft.fillScreen(ILI9341_RED);
+    delay(1000);
+    tft.fillScreen(ILI9341_GREEN);
+    delay(1000);
+    tft.fillScreen(ILI9341_BLUE);
+    delay(1000);
+
   Serial.println("After tft.begin");
-  WaitForUserInput();
   Serial.println("After TFT Begin");
   tft.fillScreen(ILI9341_BLACK);
   tft.setTextColor(ILI9341_YELLOW);
@@ -125,54 +118,53 @@ void setup() {
   Serial.print(F("Rounded rects (filled)   "));
   Serial.println(testFilledRoundRects());
 #if USE_FRAME_BUFFER
-  WaitForUserInput();
+  //WaitForUserInput();
 
   Serial.print(F("Rectangles (filled) FB     "));
   Serial.println(testFilledRectsFB(ILI9341_YELLOW, ILI9341_MAGENTA));
   delay(200);
 
-  WaitForUserInput();
+  //WaitForUserInput();
 
   Serial.print(F("Rounded rects (filled) FB   "));
   Serial.println(testFilledRoundRectsFB());
   delay(200);
   tft.useFrameBuffer(0);  // turn back off
 
-  WaitForUserInput();
+  //WaitForUserInput();
 #endif
-#endif
-
 }
 
 void WaitForUserInput() {
-  if (Serial) {
-    Serial.println("Hit key to continue");
-    while (Serial.read() == -1) ;
-    while (Serial.read() != -1) ;
-    Serial.println(F("Done!"));
-  }
+    if (Serial) {
+        Serial.println("Hit key to continue");
+        while (Serial.read() == -1)
+            ;
+        while (Serial.read() != -1)
+            ;
+        Serial.println(F("Done!"));
+    }
 }
 
 
 void loop(void) {
-  for (uint8_t rotation = 0; rotation < 4; rotation++) {
-    tft.setRotation(rotation);
-    //testText();
-    testFillScreen();
-    delay(1000);
-  }
+    for (uint8_t rotation = 0; rotation < 4; rotation++) {
+        tft.setRotation(rotation);
+        testText();
+        //testFillScreen();
+        delay(1000);
+    }
 }
 unsigned long testFillScreen() {
-  unsigned long start = micros();
-  tft.fillScreen(ILI9341_BLACK);
-  tft.fillScreen(ILI9341_RED);
-  tft.fillScreen(ILI9341_GREEN);
-  tft.fillScreen(ILI9341_BLUE);
-  tft.fillScreen(ILI9341_BLACK);
-  return micros() - start;
+    unsigned long start = micros();
+    tft.fillScreen(ILI9341_BLACK);
+    tft.fillScreen(ILI9341_RED);
+    tft.fillScreen(ILI9341_GREEN);
+    tft.fillScreen(ILI9341_BLUE);
+    tft.fillScreen(ILI9341_BLACK);
+    return micros() - start;
 }
 
-#if 0
 unsigned long testText() {
   tft.fillScreen(ILI9341_BLACK);
   unsigned long start = micros();
@@ -444,5 +436,4 @@ unsigned long testFilledRoundRectsFB() {
   tft.updateScreen();
   return micros() - start;
 }
-#endif 
 #endif

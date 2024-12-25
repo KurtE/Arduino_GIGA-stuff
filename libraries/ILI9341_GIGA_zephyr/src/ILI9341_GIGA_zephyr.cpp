@@ -180,10 +180,12 @@ void ILI9341_GIGA_n::drawFastVLine(int16_t x, int16_t y, int16_t h,
     beginSPITransaction(_SPI_CLOCK);
     setAddr(x, y, x, y + h - 1);
     writecommand_cont(ILI9341_RAMWR);
-    while (h-- > 1) {
-      writedata16_cont(color);
-    }
-    writedata16_last(color);
+    setDataMode();
+    for (uint16_t i = 0; i < h; i++) s_row_buff[i] = color;
+
+    struct spi_buf tx_buf = { .buf = (void*)s_row_buff, .len = (size_t)(h * 2 )};
+    const struct spi_buf_set tx_buf_set = { .buffers = &tx_buf, .count = 1 };
+    spi_transceive(_spi_dev, &_config16, &tx_buf_set, nullptr);
     endSPITransaction();
   }
   //printf("\tDFVL end\n");
@@ -231,10 +233,12 @@ void ILI9341_GIGA_n::drawFastHLine(int16_t x, int16_t y, int16_t w,
     beginSPITransaction(_SPI_CLOCK);
     setAddr(x, y, x + w - 1, y);
     writecommand_cont(ILI9341_RAMWR);
-    while (w-- > 1) {
-      writedata16_cont(color);
-    }
-    writedata16_last(color);
+    setDataMode();
+    for (uint16_t i = 0; i < w; i++) s_row_buff[i] = color;
+
+    struct spi_buf tx_buf = { .buf = (void*)s_row_buff, .len = (size_t)(w * 2 )};
+    const struct spi_buf_set tx_buf_set = { .buffers = &tx_buf, .count = 1 };
+    spi_transceive(_spi_dev, &_config16, &tx_buf_set, nullptr);
     endSPITransaction();
   }
 //  printf("\tDFHL end\n");
@@ -355,9 +359,25 @@ void ILI9341_GIGA_n::fillRect(int16_t x, int16_t y, int16_t w, int16_t h,
     // it'll cost more overhead, so we don't stall other SPI libs
     beginSPITransaction(_SPI_CLOCK);
     setAddr(x, y, x + w - 1, y + h - 1);
-    uint16_t color_swapped = (color >> 8) | ((color & 0xff) << 8);
     writecommand_cont(ILI9341_RAMWR);
     setDataMode();
+#if 1
+    uint32_t count_pixels = w * h;
+    uint16_t array_fill_count = min(count_pixels, sizeof(s_row_buff)/sizeof(s_row_buff[0]));
+    struct spi_buf tx_buf = { .buf = (void*)s_row_buff, .len = (size_t)(array_fill_count * 2 )};
+    const struct spi_buf_set tx_buf_set = { .buffers = &tx_buf, .count = 1 };
+    for (uint16_t i = 0; i < array_fill_count; i++) s_row_buff[i] = color;
+    while (count_pixels) {
+      spi_transceive(_spi_dev, &_config16, &tx_buf_set, nullptr);
+      count_pixels -= array_fill_count;
+      if (count_pixels < array_fill_count) {
+        array_fill_count = count_pixels;
+        tx_buf.len = (size_t)(array_fill_count * 2 );
+      }
+    }
+
+#else  
+    uint16_t color_swapped = (color >> 8) | ((color & 0xff) << 8);
     for (y = h; y > 0; y--) {
       #if 1
       for (uint16_t i = 0; i < w; i++) s_row_buff[i] = color_swapped;
@@ -368,13 +388,8 @@ void ILI9341_GIGA_n::fillRect(int16_t x, int16_t y, int16_t w, int16_t h,
       }
       writedata16_cont(color);  // was last
       #endif
-#if 0
-			if (y > 1 && (y & 1)) {
-				endSPITransaction();
-				beginSPITransaction(_SPI_CLOCK);
-			}
-#endif
     }
+#endif
     endSPITransaction();
   }
   // printf("\tfillRect - end\n");
@@ -737,6 +752,7 @@ void ILI9341_GIGA_n::readRect(int16_t x, int16_t y, int16_t w, int16_t h,
 void ILI9341_GIGA_n::writeRect(int16_t x, int16_t y, int16_t w, int16_t h,
                             const uint16_t *pcolors) {
 
+  int16_t image_width = w;
   if (x == CENTER)
     x = (_width - w) / 2;
   if (y == CENTER)
@@ -828,13 +844,32 @@ void ILI9341_GIGA_n::writeRect(int16_t x, int16_t y, int16_t w, int16_t h,
   beginSPITransaction(_SPI_CLOCK);
   setAddr(x, y, x + w - 1, y + h - 1);
   writecommand_cont(ILI9341_RAMWR);
-  for (y = h; y > 0; y--) {
+  setDataMode();
+  if (x_clip_left || x_clip_right) {
+    #if 1
     pcolors += x_clip_left;
-    for (x = w; x > 1; x--) {
-      writedata16_cont(*pcolors++);
+    struct spi_buf tx_buf = { .buf = (void*)pcolors, .len = (size_t)(w * 2) };
+    const struct spi_buf_set tx_buf_set = { .buffers = &tx_buf, .count = 1 };
+    for (y = h; y > 0; y--) {
+      tx_buf.buf = (void*)pcolors;
+      spi_transceive(_spi_dev, &_config16, &tx_buf_set, nullptr);
+      pcolors += image_width;
     }
-    writedata16_last(*pcolors++);
-    pcolors += x_clip_right;
+    #else
+    for (y = h; y > 0; y--) {
+      pcolors += x_clip_left;
+      for (x = w; x > 1; x--) {
+        writedata16_cont(*pcolors++);
+      }
+      writedata16_last(*pcolors++);
+      pcolors += x_clip_right;
+    }
+    #endif
+  } else {
+    // data us contiguious so output in one operation
+    struct spi_buf tx_buf = { .buf = (void*)pcolors, .len = (size_t)(w * h * 2 )};
+    const struct spi_buf_set tx_buf_set = { .buffers = &tx_buf, .count = 1 };
+    spi_transceive(_spi_dev, &_config16, &tx_buf_set, nullptr);
   }
   endSPITransaction();
 }
@@ -1317,6 +1352,14 @@ void ILI9341_GIGA_n::begin(uint32_t spi_clock, uint32_t spi_clock_read) {
   pinMode(DEBUG_PIN_3, OUTPUT);
   pinMode(DEBUG_PIN_4, OUTPUT);
 #endif
+
+  // Lets grab hold of the zephyr SPI data.
+  uint32_t *p = (uint32_t *)_pspi;
+  _spi_dev = (const struct device *)p[1];
+  memset((void *)&_config16, 0, sizeof(_config16));
+  _config16.frequency = _SPI_CLOCK;
+  _config16.operation = SPI_WORD_SET(16) | SPI_TRANSFER_MSB;
+
   // Serial.println("_t3n::begin - completed"); Serial.flush();
   setRotation(0); 
 }
@@ -3770,7 +3813,7 @@ void ILI9341_GIGA_n::resetScrollBackgroundColor(uint16_t color) {
 void ILI9341_GIGA_n::setFrameBuffer(uint16_t *frame_buffer) {
 #ifdef ENABLE_ILI9341_FRAMEBUFFER
   _pfbtft = frame_buffer;
-  _dma_state &= ~ILI9341_DMA_INIT; // clear that we init the dma chain as our
+ // _dma_state &= ~ILI9341_DMA_INIT; // clear that we init the dma chain as our
                                    // buffer has changed...
 
 #endif
@@ -3832,11 +3875,11 @@ void ILI9341_GIGA_n::updateScreen(void) // call to say update the screen now.
 
       // BUGBUG doing as one shot.  Not sure if should or not or do like
       // main code and break up into transactions...
+      #if 0
       uint16_t *pfbtft_end =
           &_pfbtft[(ILI9341_TFTWIDTH * ILI9341_TFTHEIGHT) - 1]; // setup
       uint16_t *pftbft = _pfbtft;
 
-      #if 1
 
       // Quick and dirty
       uint16_t c = 0;
@@ -3850,12 +3893,10 @@ void ILI9341_GIGA_n::updateScreen(void) // call to say update the screen now.
       }
       if (c != 0) _pspi->transfer(s_row_buff, c * 2);
       #else
-
-      // Quick write out the data;
-      while (pftbft < pfbtft_end) {
-        writedata16_cont(*pftbft++);
-      }
-      writedata16_last(*pftbft);
+      // lets call zephyr to do the work
+      struct spi_buf tx_buf = { .buf = _pfbtft, .len = ILI9341_TFTWIDTH * ILI9341_TFTHEIGHT * 2 };
+      const struct spi_buf_set tx_buf_set = { .buffers = &tx_buf, .count = 1 };
+      spi_transceive(_spi_dev, &_config16, &tx_buf_set, nullptr);
       #endif
     } else {
       // setup just to output the clip rectangle area anded with updated area if
@@ -3905,4 +3946,35 @@ void ILI9341_GIGA_n::updateScreen(void) // call to say update the screen now.
   }
   clearChangedRange(); // make sure the dirty range is updated.
 #endif
+}
+
+bool ILI9341_GIGA_n::updateScreenAsync(bool update_cont) {
+  if (update_cont) return false; // not implemented
+  #if defined(CONFIG_SPI_ASYNC) && defined(CONFIG_SPI_STM32_INTERRUPT)
+  _async_update_active = true;
+  struct spi_buf tx_buf = { .buf = _pfbtft, .len = ILI9341_TFTWIDTH * ILI9341_TFTHEIGHT * 2 };
+  const struct spi_buf_set tx_buf_set = { .buffers = &tx_buf, .count = 1 };
+  spi_transceive_cb(_spi_dev, &_config16, &tx_buf_set, nullptr, &async_callback, this);
+
+  #else
+  Serial.println("updateScreenAsync: CONFIG_SPI_ASYNC and CONFIG_SPI_STM32_INTERRUPT");
+  Serial.println("\tMust be defined in configuration file");
+  return false;
+  #endif  
+}
+void ILI9341_GIGA_n::waitUpdateAsyncComplete(void) {
+  #if defined(CONFIG_SPI_ASYNC) && defined(CONFIG_SPI_STM32_INTERRUPT)
+  while (_async_update_active) {}
+  #endif
+}
+
+boolean ILI9341_GIGA_n::asyncUpdateActive(void) { return _async_update_active; }
+
+static void async_callback(const struct device *dev, int result, void *data) {
+  ((ILI9341_GIGA_n*)data)->process_async_callback();
+
+}
+
+void ILI9341_GIGA_n::process_async_callback(void) {
+  _async_update_active = false; 
 }
