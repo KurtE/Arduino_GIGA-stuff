@@ -46,7 +46,6 @@
 //-----------------------------------------------------------------------------
 // ILI9341 displays
 //-----------------------------------------------------------------------------
-#define CS_SD 6
 #define TFT_DC 9
 #define TFT_RST 8
 #define TFT_CS 10
@@ -54,6 +53,8 @@ ILI9341_GIGA_n tft(TFT_CS, TFT_DC, TFT_RST);
 #define TFT_SPI SPI1
 #define TFT_SPEED 20000000u
 
+#define SD_CS 6
+#define SD_SPI SPI
 
 
 //-----------------------------------------------------------------------------
@@ -189,28 +190,28 @@ class ZephyrSDSpiClass : public SdSpiBaseClass {
     }
 
   private:
-    SPIClass *_pspi = &SPI1;
+    SPIClass *_pspi = &SPI;
     SPISettings m_spiSettings;
     const struct device *_spi_dev;
     spi_config _config;
     struct spi_buf _buf;
     struct spi_buf_set _buf_set = { .buffers = &_buf, .count = 1 };
 
-} zspi(SPI1);
+} zspi(SD_SPI);
 
-#define SD_CONFIG SdSpiConfig(CS_SD, SHARED_SPI, SPI_CLOCK, &zspi)
+#define SD_CONFIG SdSpiConfig(SD_CS, SHARED_SPI, SPI_CLOCK, &zspi)
 #else
-#define SD_CONFIG SdSpiConfig(CS_SD, SHARED_SPI, SPI_CLOCK, &SPI1)
+#define SD_CONFIG SdSpiConfig(SD_CS, SHARED_SPI, SPI_CLOCK, &SD_SPI)
 #endif
 // SD_FAT_TYPE = 0 for SdFat/File as defined in SdFatConfig.h,
 // 1 for FAT16/FAT32, 2 for exFAT, 3 for FAT16/FAT32 and exFAT.
 #define SD_FAT_TYPE 3
 // SDCARD_SS_PIN is defined for the built-in SD on some boards.
 //#ifndef SDCARD_SS_PIN
-//const uint8_t CS_SD_PIN = SS;
+//const uint8_t SD_CS_PIN = SS;
 //#else   // SDCARD_SS_PIN
 // Assume built-in SD is used.
-//const uint8_t CS_SD_PIN = SDCARD_SS_PIN;
+//const uint8_t SD_CS_PIN = SDCARD_SS_PIN;
 //#endif  // SDCARD_SS_PIN
 
 // Try max SPI clock for an SD. Reduce SPI_CLOCK if errors occur.
@@ -220,9 +221,9 @@ class ZephyrSDSpiClass : public SdSpiBaseClass {
 //#if HAS_SDIO_CLASS
 //#define SD_CONFIG SdioConfig(FIFO_SDIO)
 //#elif ENABLE_DEDICATED_SPI
-//#define SD_CONFIG SdSpiConfig(CS_SD, DEDICATED_SPI, SPI_CLOCK)
+//#define SD_CONFIG SdSpiConfig(SD_CS, DEDICATED_SPI, SPI_CLOCK)
 //#else  // HAS_SDIO_CLASS
-//#define SD_CONFIG SdSpiConfig(CS_SD, SHARED_SPI, SPI_CLOCK, &zspi)
+//#define SD_CONFIG SdSpiConfig(SD_CS, SHARED_SPI, SPI_CLOCK, &zspi)
 //#endif  // HAS_SDIO_CLASS
 
 
@@ -283,13 +284,13 @@ uint32_t g_WRCount = 0;  // debug count how many time writeRect called
 #define SD_DRIVE 0x04
 
 #ifdef ARDUINO_PORTENTA_H7_M7
-#ifdef CS_SD
+#ifdef SD_CS
 #define ALL_STARTED (USB_DRIVE | SDIO_DRIVE | SD_DRIVE)
 #else
 #define ALL_STARTED (USB_DRIVE | SDIO_DRIVE)
 #endif
 #else
-#ifdef CS_SD
+#ifdef SD_CS
 #define ALL_STARTED (USB_DRIVE | SD_DRIVE)
 #else
 #define ALL_STARTED (USB_DRIVE)
@@ -342,14 +343,14 @@ void setup(void) {
     //-----------------------------------------------------------------------------
 
     pinMode(TFT_CS, OUTPUT);
-    pinMode(CS_SD, OUTPUT);
+    pinMode(SD_CS, OUTPUT);
     digitalWrite(TFT_CS, HIGH);
 
-#ifdef CS_SD
-    Serial.print(">>> CS_SD: ");
-    Serial.println(CS_SD, DEC);
-    pinMode(CS_SD, OUTPUT);
-    digitalWrite(CS_SD, HIGH);
+#ifdef SD_CS
+    Serial.print(">>> SD_CS: ");
+    Serial.println(SD_CS, DEC);
+    pinMode(SD_CS, OUTPUT);
+    digitalWrite(SD_CS, HIGH);
 #endif
 
     Serial.println("*** start up ILI9341 ***");
@@ -384,7 +385,7 @@ void setup(void) {
     tft.print("Waiting for SD");
     while (!g_devices_started || (em < 3000)) {
         if (g_devices_started == ALL_STARTED) break;
-#ifdef CS_SD
+#ifdef SD_CS
         if (!(g_devices_started & SD_DRIVE)) {
             Serial.println("calling SDBEGIN");
             if (SD.begin(SD_CONFIG)) {
