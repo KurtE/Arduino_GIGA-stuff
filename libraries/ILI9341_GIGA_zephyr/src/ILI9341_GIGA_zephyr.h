@@ -238,7 +238,8 @@ public:
   //   pspi: either  &SPI (6 pin spi connector) or &SPI1 (shield pins)
   //   CS: Chip select pin,  DC: Data/Command pin
   //   RST: optional reset pin
-  //ILI9341_GIGA_n(SPIClass *pspi, uint8_t CS, uint8_t DC, uint8_t RST = 255);
+  ILI9341_GIGA_n(SPIClass *pspi, uint8_t CS, uint8_t DC, uint8_t RST = 255);
+  
   ILI9341_GIGA_n(uint8_t cs_pin, uint8_t dc_pin, uint8_t rst_pin = 255);
   // Constructor
   //   CS: Chip select pin,  DC: Data/Command pin
@@ -795,10 +796,14 @@ public:
 
     setAddr(x, y, x + w - 1, y);
     writecommand_cont(ILI9341_RAMWR);
-    do {
-      writedata16_cont(color);
-    } while (--w > 0);
+    setDataMode();
+    for (uint16_t i = 0; i < w; i++) s_row_buff[i] = color;
+
+    struct spi_buf tx_buf = { .buf = (void*)s_row_buff, .len = (size_t)(w * 2 )};
+    const struct spi_buf_set tx_buf_set = { .buffers = &tx_buf, .count = 1 };
+    spi_transceive(_spi_dev, &_config16, &tx_buf_set, nullptr);
   }
+  
   void VLine(int16_t x, int16_t y, int16_t h, uint16_t color)
       __attribute__((always_inline)) {
 #ifdef ENABLE_ILI9341_FRAMEBUFFER
@@ -824,9 +829,12 @@ public:
 
     setAddr(x, y, x, y + h - 1);
     writecommand_cont(ILI9341_RAMWR);
-    do {
-      writedata16_cont(color);
-    } while (--h > 0);
+    setDataMode();
+    for (uint16_t i = 0; i < h; i++) s_row_buff[i] = color;
+
+    struct spi_buf tx_buf = { .buf = (void*)s_row_buff, .len = (size_t)(h * 2 )};
+    const struct spi_buf_set tx_buf_set = { .buffers = &tx_buf, .count = 1 };
+    spi_transceive(_spi_dev, &_config16, &tx_buf_set, nullptr);
   }
   /**
    * Found in a pull request for the Adafruit framebuffer library. Clever!

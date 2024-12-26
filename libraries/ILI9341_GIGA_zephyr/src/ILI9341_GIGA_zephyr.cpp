@@ -72,29 +72,19 @@ uint16_t ILI9341_GIGA_n::s_row_buff[320]; //
 // use SPI pins
 // specific to each board type (e.g. 11,13 for Uno, 51,52 for Mega, etc.)
 
-#if 0
-ILI9341_GIGA_n::ILI9341_GIGA_n(SPIClass *pspi, uint8_t cs, uint8_t dc, uint8_t rst) {
-  _pspi = pspi;
-  _cs = cs;
-  _dc = dc;
-  _rst = rst;
-  _width = WIDTH;
-  _height = HEIGHT;
+ILI9341_GIGA_n::ILI9341_GIGA_n(SPIClass *pspi, uint8_t cs_pin, uint8_t dc_pin, uint8_t rst_pin) : 
+    _pspi(pspi), _cs(cs_pin), _dc(dc_pin), _rst(rst_pin) 
+{
+#ifdef ENABLE_ILI9341_FRAMEBUFFER
+  _pfbtft = NULL;
+  _use_fbtft = 0; // Are we in frame buffer mode?
+  _we_allocated_buffer = NULL;
+#endif
+}
 
-  rotation = 0;
-  cursor_y = cursor_x = 0;
-  textsize_x = textsize_y = 1;
-  textcolor = textbgcolor = 0xFFFF;
-  wrap = true;
-  font = NULL;
-  gfxFont = NULL;
-  setClipRect();
-  setOrigin();
-#else
 ILI9341_GIGA_n::ILI9341_GIGA_n(uint8_t cs_pin, uint8_t dc_pin, uint8_t rst_pin) :
     _cs(cs_pin), _dc(dc_pin), _rst(rst_pin) 
   {
-#endif
   // Added to see how much impact actually using non hardware CS pin might be
   //_cspinmask = 0;
   //_csport = NULL;
@@ -3951,16 +3941,26 @@ void ILI9341_GIGA_n::updateScreen(void) // call to say update the screen now.
 bool ILI9341_GIGA_n::updateScreenAsync(bool update_cont) {
   if (update_cont) return false; // not implemented
   #if defined(CONFIG_SPI_ASYNC) && defined(CONFIG_SPI_STM32_INTERRUPT)
-  _async_update_active = true;
-  struct spi_buf tx_buf = { .buf = _pfbtft, .len = ILI9341_TFTWIDTH * ILI9341_TFTHEIGHT * 2 };
-  const struct spi_buf_set tx_buf_set = { .buffers = &tx_buf, .count = 1 };
-  spi_transceive_cb(_spi_dev, &_config16, &tx_buf_set, nullptr, &async_callback, this);
+  #ifdef ENABLE_ILI9341_FRAMEBUFFER
+  if (_use_fbtft) {
+    beginSPITransaction(_SPI_CLOCK);
+    // Doing full window.
+    setAddr(0, 0, _width - 1, _height - 1);
+    writecommand_cont(ILI9341_RAMWR);
+    setDataMode();
 
+    _async_update_active = true;
+    struct spi_buf tx_buf = { .buf = _pfbtft, .len = ILI9341_TFTWIDTH * ILI9341_TFTHEIGHT * 2 };
+    const struct spi_buf_set tx_buf_set = { .buffers = &tx_buf, .count = 1 };
+    spi_transceive_cb(_spi_dev, &_config16, &tx_buf_set, nullptr, &async_callback, this);
+  }
+  #endif
   #else
   Serial.println("updateScreenAsync: CONFIG_SPI_ASYNC and CONFIG_SPI_STM32_INTERRUPT");
   Serial.println("\tMust be defined in configuration file");
   return false;
   #endif  
+  return true;
 }
 void ILI9341_GIGA_n::waitUpdateAsyncComplete(void) {
   #if defined(CONFIG_SPI_ASYNC) && defined(CONFIG_SPI_STM32_INTERRUPT)
@@ -3970,11 +3970,12 @@ void ILI9341_GIGA_n::waitUpdateAsyncComplete(void) {
 
 boolean ILI9341_GIGA_n::asyncUpdateActive(void) { return _async_update_active; }
 
-static void async_callback(const struct device *dev, int result, void *data) {
+void ILI9341_GIGA_n::async_callback(const struct device *dev, int result, void *data) {
   ((ILI9341_GIGA_n*)data)->process_async_callback();
 
 }
 
 void ILI9341_GIGA_n::process_async_callback(void) {
+  endSPITransaction(); 
   _async_update_active = false; 
 }

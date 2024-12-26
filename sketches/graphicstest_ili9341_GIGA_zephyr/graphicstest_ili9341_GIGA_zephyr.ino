@@ -23,26 +23,26 @@
 
 #define USE_FRAME_BUFFER 1
 
-//ILI9341_GIGA_n tft(&SPI1, TFT_CS, TFT_DC, TFT_RST);
-ILI9341_GIGA_n tft(TFT_CS, TFT_DC, TFT_RST);
+ILI9341_GIGA_n tft(&SPI1, TFT_CS, TFT_DC, TFT_RST);
+//ILI9341_GIGA_n tft(TFT_CS, TFT_DC, TFT_RST);
 
 #define DEBUG_PIN 0
 
 // needing forward references?
-extern unsigned long testFillScreen();
-extern unsigned long testText();
-extern unsigned long testLines(uint16_t color) ;
-extern unsigned long testFastLines(uint16_t color1, uint16_t color2);
-extern unsigned long testRects(uint16_t color);
-extern unsigned long testFilledRects(uint16_t color1, uint16_t color2);
-extern unsigned long testFilledCircles(uint8_t radius, uint16_t color);
-extern unsigned long testCircles(uint8_t radius, uint16_t color);
-extern unsigned long testTriangles();
-extern unsigned long testFilledTriangles();
-extern unsigned long testRoundRects();
-extern unsigned long testFilledRoundRects();
-extern unsigned long testFilledRectsFB(uint16_t color1, uint16_t color2);
-extern unsigned long testFilledRoundRectsFB() ;
+extern uint32_t testFillScreen();
+extern uint32_t testText();
+extern uint32_t testLines(uint16_t color) ;
+extern uint32_t testFastLines(uint16_t color1, uint16_t color2);
+extern uint32_t testRects(uint16_t color);
+extern uint32_t testFilledRects(uint16_t color1, uint16_t color2);
+extern uint32_t testFilledCircles(uint8_t radius, uint16_t color);
+extern uint32_t testCircles(uint8_t radius, uint16_t color);
+extern uint32_t testTriangles();
+extern uint32_t testFilledTriangles();
+extern uint32_t testRoundRects();
+extern uint32_t testFilledRoundRects();
+extern uint32_t testFilledRectsFB(uint16_t color1, uint16_t color2);
+extern uint32_t testFilledRoundRectsFB() ;
 extern void WaitForUserInput();
 
 void setup() {
@@ -52,7 +52,7 @@ void setup() {
     delay(500);
     Serial.println("ILI9341 Test!");
     pinMode(DEBUG_PIN, OUTPUT);
-    tft.setSPI(SPI1);  // temporary...
+//    tft.setSPI(SPI1);  // temporary...
     tft.begin(30000000);
     Serial.println("after TFT.begin");
 
@@ -155,8 +155,8 @@ void loop(void) {
         delay(1000);
     }
 }
-unsigned long testFillScreen() {
-    unsigned long start = micros();
+uint32_t testFillScreen() {
+    uint32_t start = micros();
     tft.fillScreen(ILI9341_BLACK);
     tft.fillScreen(ILI9341_RED);
     tft.fillScreen(ILI9341_GREEN);
@@ -165,9 +165,9 @@ unsigned long testFillScreen() {
     return micros() - start;
 }
 
-unsigned long testText() {
+uint32_t testText() {
   tft.fillScreen(ILI9341_BLACK);
-  unsigned long start = micros();
+  uint32_t start = micros();
   tft.setCursor(0, 0);
   tft.setTextColor(ILI9341_WHITE);  tft.setTextSize(1);
   tft.println("Hello World!");
@@ -192,8 +192,8 @@ unsigned long testText() {
   return micros() - start;
 }
 
-unsigned long testLines(uint16_t color) {
-  unsigned long start, t;
+uint32_t testLines(uint16_t color) {
+  uint32_t start, t;
   int           x1, y1, x2, y2,
                 w = tft.width(),
                 h = tft.height();
@@ -243,8 +243,8 @@ unsigned long testLines(uint16_t color) {
   return micros() - start;
 }
 
-unsigned long testFastLines(uint16_t color1, uint16_t color2) {
-  unsigned long start;
+uint32_t testFastLines(uint16_t color1, uint16_t color2) {
+  uint32_t start;
   int           x, y, w = tft.width(), h = tft.height();
 
   tft.fillScreen(ILI9341_BLACK);
@@ -255,8 +255,8 @@ unsigned long testFastLines(uint16_t color1, uint16_t color2) {
   return micros() - start;
 }
 
-unsigned long testRects(uint16_t color) {
-  unsigned long start;
+uint32_t testRects(uint16_t color) {
+  uint32_t start;
   int           n, i, i2,
                 cx = tft.width()  / 2,
                 cy = tft.height() / 2;
@@ -272,8 +272,8 @@ unsigned long testRects(uint16_t color) {
   return micros() - start;
 }
 
-unsigned long testFilledRects(uint16_t color1, uint16_t color2) {
-  unsigned long start, t = 0;
+uint32_t testFilledRects(uint16_t color1, uint16_t color2) {
+  uint32_t start, t = 0;
   int           n, i, i2,
                 cx = tft.width()  / 2 - 1,
                 cy = tft.height() / 2 - 1;
@@ -292,8 +292,8 @@ unsigned long testFilledRects(uint16_t color1, uint16_t color2) {
   return t;
 }
 
-unsigned long testFilledCircles(uint8_t radius, uint16_t color) {
-  unsigned long start;
+uint32_t testFilledCircles(uint8_t radius, uint16_t color) {
+  uint32_t start;
   int x, y, w = tft.width(), h = tft.height(), r2 = radius * 2;
 
   tft.fillScreen(ILI9341_BLACK);
@@ -307,8 +307,8 @@ unsigned long testFilledCircles(uint8_t radius, uint16_t color) {
   return micros() - start;
 }
 
-unsigned long testCircles(uint8_t radius, uint16_t color) {
-  unsigned long start;
+uint32_t testCircles(uint8_t radius, uint16_t color) {
+  uint32_t start;
   int           x, y, r2 = radius * 2,
                       w = tft.width()  + radius,
                       h = tft.height() + radius;
@@ -325,8 +325,8 @@ unsigned long testCircles(uint8_t radius, uint16_t color) {
   return micros() - start;
 }
 
-unsigned long testTriangles() {
-  unsigned long start;
+uint32_t testTriangles() {
+  uint32_t start;
   int           n, i, cx = tft.width()  / 2 - 1,
                       cy = tft.height() / 2 - 1;
 
@@ -344,8 +344,8 @@ unsigned long testTriangles() {
   return micros() - start;
 }
 
-unsigned long testFilledTriangles() {
-  unsigned long start, t = 0;
+uint32_t testFilledTriangles() {
+  uint32_t start, t = 0;
   int           i, cx = tft.width()  / 2 - 1,
                    cy = tft.height() / 2 - 1;
 
@@ -363,8 +363,8 @@ unsigned long testFilledTriangles() {
   return t;
 }
 
-unsigned long testRoundRects() {
-  unsigned long start;
+uint32_t testRoundRects() {
+  uint32_t start;
   int           w, i, i2,
                 cx = tft.width()  / 2 - 1,
                 cy = tft.height() / 2 - 1;
@@ -380,8 +380,8 @@ unsigned long testRoundRects() {
   return micros() - start;
 }
 
-unsigned long testFilledRoundRects() {
-  unsigned long start;
+uint32_t testFilledRoundRects() {
+  uint32_t start;
   int           i, i2,
                 cx = tft.width()  / 2 - 1,
                 cy = tft.height() / 2 - 1;
@@ -397,8 +397,8 @@ unsigned long testFilledRoundRects() {
 }
 
 #if USE_FRAME_BUFFER
-unsigned long testFilledRectsFB(uint16_t color1, uint16_t color2) {
-  unsigned long start, t = 0;
+uint32_t testFilledRectsFB(uint16_t color1, uint16_t color2) {
+  uint32_t start, t = 0;
   int           n, i, i2,
                 cx = tft.width()  / 2 - 1,
                 cy = tft.height() / 2 - 1;
@@ -420,8 +420,8 @@ unsigned long testFilledRectsFB(uint16_t color1, uint16_t color2) {
 }
 
 
-unsigned long testFilledRoundRectsFB() {
-  unsigned long start;
+uint32_t testFilledRoundRectsFB() {
+  uint32_t start;
   int           i, i2,
                 cx = tft.width()  / 2 - 1,
                 cy = tft.height() / 2 - 1;
