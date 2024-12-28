@@ -8,6 +8,7 @@
 #include <SdFat.h>
 #include <sdios.h>
 #include <elapsedMillis.h>
+#include <SDRAM.h>
 
 #define MAX_FILENAME_LEN 256
 
@@ -260,6 +261,11 @@ int g_display_image_time = 2500;
 int g_background_color = BLACK;
 int g_max_scale_up = 4;
 
+uint16_t *frame_buffer_allocated = nullptr;
+uint16_t *frame_buffer_1 = nullptr;
+uint16_t *frame_buffer_2 = nullptr;
+bool using_frame_buffer_1 = true;
+bool update_screen_async = true;
 
 // scale boundaries {2, 4, 8, 16<maybe>}
 enum { SCL_HALF = 0,
@@ -299,7 +305,6 @@ uint32_t g_WRCount = 0;  // debug count how many time writeRect called
 
 uint8_t g_devices_started = 0;  // no devices started
 uint8_t g_current_device = 0;
-bool use_zephyr_update_hacks = true;
 
 extern bool ProcessOptionsFile(FsFile *optfile);
 extern void ShowAllOptionValues();
@@ -458,7 +463,15 @@ void setup(void) {
     }
 #endif
     ShowAllOptionValues();
-
+    SDRAM.begin();
+    frame_buffer_allocated = (uint16_t *)SDRAM.malloc(tft.width() * tft.height() * 4 + 16); // allocate for both buffers
+    Serial.print("SDRam Buffer allocate 0x");
+    Serial.print((uint32_t)frame_buffer_allocated, HEX);
+    frame_buffer_1 = (uint16_t*)(((uint32_t)frame_buffer_allocated + 15) & 0xfffffff0);
+    frame_buffer_2 = &frame_buffer_1[tft.width() * tft.height()];
+    Serial.print(" 0x");  Serial.print((uint32_t)frame_buffer_1, HEX);
+    Serial.print(" 0x");  Serial.println((uint32_t)frame_buffer_2, HEX);
+    tft.setFrameBuffer(frame_buffer_1);
     tft.useFrameBuffer(true);
 }
 
@@ -597,10 +610,10 @@ void loop() {
                 if (ch == 'd') g_debug_output = !g_debug_output;
                 else if (ch == 's') g_stepMode = !g_stepMode;
                 else if (ch == 'l') listFiles();
-                else if (ch == 'z') {
-                    use_zephyr_update_hacks = !use_zephyr_update_hacks;
-                    Serial.print("\n*** Use Zephyr SPI for Update Screen: ");
-                    Serial.println(use_zephyr_update_hacks);
+                else if (ch == 'a') {
+                  update_screen_async = !update_screen_async;
+                  if (update_screen_async) Serial.println(">>> Using updateScreenAsync");
+                  else Serial.println(">>> Using updateScreen");
                 }
                 ch = Serial.read();
             }
@@ -625,29 +638,17 @@ const struct device *spi_dev = nullptr;
 struct spi_config config16;
 struct spi_buf tx_buf = { .buf = nullptr, .len = 320 * 240 * 2 };
 const struct spi_buf_set tx_buf_set = { .buffers = &tx_buf, .count = 1 };
+
 void UpdateScreen() {
-    if (use_zephyr_update_hacks) {
-        if (spi_dev == nullptr) {
-            uint32_t *p = (uint32_t *)&TFT_SPI;
-            spi_dev = (const struct device *)p[1];
-            memset((void *)&config16, 0, sizeof(config16));
-            config16.frequency = TFT_SPEED;
-            config16.operation = SPI_WORD_SET(16) | SPI_TRANSFER_MSB;
-            tx_buf.buf = tft.getFrameBuffer();
-        }
-        tft.beginSPITransaction(SPI_CLOCK);
-        tft.setAddr(0, 0, tft.width() - 1, tft.height() - 1);
-        tft.writecommand_cont(ILI9341_RAMWR);
-        tft.setDataMode();
-        int ret = spi_transceive(spi_dev, &config16, &tx_buf_set, nullptr);
-        tft.endSPITransaction();
-        if (ret < 0) {
-            Serial.print("US spi_transceive failed: ");
-            Serial.println(ret);
-        }
-    } else {
-        tft.updateScreen();
-    }
+  if (update_screen_async) {
+    tft.waitUpdateAsyncComplete(); // make sure any previous one was done.
+    tft.updateScreenAsync();
+    using_frame_buffer_1 = !using_frame_buffer_1;
+    tft.setFrameBuffer(using_frame_buffer_1? frame_buffer_1 : frame_buffer_2);
+  } else {
+
+    tft.updateScreen();
+  }
 }
 
 
@@ -846,6 +847,7 @@ void bmpDraw(FsFile &bmpFile, const char *filename, bool fErase) {
     Serial.print(F("Loading image '"));
     Serial.print(filename);
     Serial.println('\'');
+    int image_size = bmpFile.size();
 
     // Parse BMP header
     if (read16(bmpFile) == 0x4D42) {                                     // BMP signature
@@ -867,6 +869,8 @@ void bmpDraw(FsFile &bmpFile, const char *filename, bool fErase) {
 
                 goodBmp = true;  // Supported BMP format -- proceed!
                 Serial.print("Image size: ");
+                Serial.print(image_size);
+                Serial.print(" ");
                 Serial.print(image_width);
                 Serial.print("x");
                 Serial.print(image_height);
@@ -1170,6 +1174,8 @@ void processJPGFile(FsFile &jpgFile, const char *name, bool fErase) {
         int image_height = jpeg.getHeight();
         int decode_options = 0;
         Serial.print("Image size: ");
+        Serial.print(image_size), 
+        Serial.print(" ");
         Serial.print(image_width);
         Serial.print("x");
         Serial.print(image_height);

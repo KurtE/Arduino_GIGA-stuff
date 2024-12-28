@@ -1,5 +1,5 @@
 #include <MemoryHexDump.h>
-
+#include "SDRAM.h"
 
 #include <ILI9341_GIGA_zephyr.h>
 //#include <ili9341_GIGA_n_font_Arial.h>
@@ -61,7 +61,10 @@ void setup() {
         delay(500);
     }
 
-    //tft.setFrameBuffer(frame_buffer);
+    uint16_t *pframe_buffer = (uint16_t*)SDRAM.malloc(320*240*2);
+    Serial.print("Frame Buffer address: 0x");
+    Serial.println((uint32_t)pframe_buffer);
+    tft.setFrameBuffer(pframe_buffer);
     tft.useFrameBuffer(true);
 
     for (uint8_t i = 0; i < CNT_COLORS; i++) {

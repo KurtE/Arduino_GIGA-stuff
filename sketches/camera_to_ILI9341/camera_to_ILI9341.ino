@@ -1,6 +1,8 @@
+//#include <arducam_dvp.h>
+
 #include "SPI.h"
-#include "Adafruit_GFX.h"
-#include "Adafruit_ILI9341.h"
+#include <ILI9341_GIGA_zephyr.h>
+#include <ILI9341_fonts.h>
 
 #include "camera.h"
 #include "ov767x.h"
@@ -16,10 +18,13 @@ Camera cam(ov767x);
 
 
 // For the Adafruit shield, these are the default.
+#define CS_SD 6
 #define TFT_DC 9
 #define TFT_RST 8
 #define TFT_CS 10
-
+ILI9341_GIGA_n tft(TFT_CS, TFT_DC, TFT_RST);
+#define TFT_SPI SPI1
+#define TFT_SPEED 20000000u
 
 /*
   Other buffer instantiation options:
@@ -32,7 +37,7 @@ unsigned long lastUpdate = 0;
 
 // Use hardware SPI (on Uno, #13, #12, #11) and the above for CS/DC
 //Adafruit_ILI9341 tft = Adafruit_ILI9341(TFT_CS, TFT_DC);
-Adafruit_ILI9341 tft = Adafruit_ILI9341(&SPI1, TFT_DC, TFT_CS, TFT_RST);
+//Adafruit_ILI9341 tft = Adafruit_ILI9341(&SPI1, TFT_DC, TFT_CS, TFT_RST);
 
 
 void blinkLED(uint32_t count = 0xFFFFFFFF) {
@@ -88,7 +93,8 @@ void loop() {
         ((uint16_t*)outfb.getBuffer())[j + i * 240] = (lo_hi[0] << 8) + lo_hi[1];
       }
     }
-    tft.drawRGBBitmap(0, 0, (uint16_t*)outfb.getBuffer(), 240, 320);
+    //tft.drawRGBBitmap(0, 0, (uint16_t*)outfb.getBuffer(), 240, 320);
+    tft.writeRect(0, 0, 240, 320, (uint16_t*)outfb.getBuffer());
     //delay(2000);
   } else {
     blinkLED(20);
