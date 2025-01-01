@@ -118,9 +118,23 @@ class ZephyrSDSpiClass : public SdSpiBaseClass {
             buf[i] = SPI1.transfer(0XFF);
         }
 #else
+/*        static uint16_t debug_count = 100;
+        if (debug_count) {
+          Serial.print("$$");
+          Serial.print((uint32_t)buf);
+          Serial.print(" ");
+          Serial.println(count);
+          debug_count--;
+        }
+*/
+        #if 1
+        _buf.buf = (void *)buf;
+        _buf.len = count;
+          /*int ret = */ spi_transceive(_spi_dev, &_config, nullptr, &_buf_set);
+        #else
         uint8_t tx_dummy_buf[128];
-        struct spi_buf tx_buf;
-        struct spi_buf_set tx_buf_set = { .buffers = &tx_buf, .count = 1 };
+        struct spi_buf tx_buf[4];
+        struct spi_buf_set tx_buf_set = { .buffers = tx_buf, .count = 4 };
 
         memset(tx_dummy_buf, 0xff, sizeof(tx_dummy_buf));
         size_t cb_transfer = sizeof(tx_dummy_buf); 
@@ -134,6 +148,7 @@ class ZephyrSDSpiClass : public SdSpiBaseClass {
           count -= cb_transfer;
           buf += cb_transfer;
         }
+        #endif
 
 /*        static uint8_t debug_count = 0;
         if (debug_count) {
@@ -265,7 +280,9 @@ uint16_t *frame_buffer_allocated = nullptr;
 uint16_t *frame_buffer_1 = nullptr;
 uint16_t *frame_buffer_2 = nullptr;
 bool using_frame_buffer_1 = true;
+
 bool update_screen_async = true;
+bool read_files_into_buffer = false;
 
 // scale boundaries {2, 4, 8, 16<maybe>}
 enum { SCL_HALF = 0,
@@ -614,6 +631,11 @@ void loop() {
                   update_screen_async = !update_screen_async;
                   if (update_screen_async) Serial.println(">>> Using updateScreenAsync");
                   else Serial.println(">>> Using updateScreen");
+                }
+                else if (ch == 'b') {
+                  read_files_into_buffer = !read_files_into_buffer;
+                  if (read_files_into_buffer) Serial.println(">>> Using Read File buffer");
+                  else Serial.println(">>> Not using Read file buffer");
                 }
                 ch = Serial.read();
             }
@@ -1158,10 +1180,17 @@ void ScaleDownWriteClippedRect(int row, int image_width, uint16_t *usPixels) {
 #ifdef __JPEGDEC__
 JPEGDEC jpeg;
 
+uint8_t *ram_image_buffer = nullptr;
+#define RAM_IMAGE_MAX_SIZE (512*1024ul)
 
 void processJPGFile(FsFile &jpgFile, const char *name, bool fErase) {
     int image_size = jpgFile.size();
     jpgFile.seek(0);
+    if (read_files_into_buffer && (ram_image_buffer == nullptr)) {
+      if (image_size <= RAM_IMAGE_MAX_SIZE) {
+        ram_image_buffer = (uint8_t*)SDRAM.malloc(RAM_IMAGE_MAX_SIZE);
+      }
+    }
     Serial.println();
     Serial.print((uint32_t)&jpgFile, HEX);
     Serial.print(F(" Loading JPG image '"));
@@ -1169,7 +1198,15 @@ void processJPGFile(FsFile &jpgFile, const char *name, bool fErase) {
     Serial.print("' ");
     Serial.println(image_size, DEC);
     uint8_t scale = 1;
-    if (jpeg.open((void *)&jpgFile, image_size, nullptr, myReadJPG, mySeekJPG, JPEGDraw)) {
+    int iRet;
+    if (read_files_into_buffer && ram_image_buffer && (image_size < RAM_IMAGE_MAX_SIZE)) {
+      jpgFile.read(ram_image_buffer, image_size);
+      iRet = jpeg.openRAM(ram_image_buffer,  image_size, JPEGDraw);
+
+    } else {
+      iRet = jpeg.open((void *)&jpgFile, image_size, nullptr, myReadJPG, mySeekJPG, JPEGDraw);
+    }
+    if (iRet) {
         int image_width = jpeg.getWidth();
         int image_height = jpeg.getHeight();
         int decode_options = 0;
