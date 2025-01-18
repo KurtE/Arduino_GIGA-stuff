@@ -1,4 +1,5 @@
 int  analog_pin = 10;
+extern void print_pwm_structures();
 void setup() {
     // put your setup code here, to run once:
     Serial.begin(115200);
@@ -9,6 +10,31 @@ void setup() {
     Serial.println("Enter: <pin> value - to change ");
     Serial.println("   #N - to print out information about timer N");
     delay(1000);
+}
+
+#include <zephyr/devicetree.h>
+extern const struct pwm_dt_spec arduino_pwm[];
+extern const pin_size_t arduino_pwm_pins[];
+void print_pwm_structures() {
+  Serial.print("\narduino_pwm table:");
+  int cnt_pwms = DT_PROP_LEN(DT_PATH(zephyr_user), pwms);
+
+  for (int i = 0; i < cnt_pwms; i++) {
+    Serial.print("\t"); Serial.print(i);
+    Serial.print(" 0x"); Serial.print((uint32_t)arduino_pwm[i].dev, HEX);
+      Serial.print("("); Serial.print(arduino_pwm[i].dev->name);
+      Serial.print(",0x"); Serial.print(arduino_pwm[i].dev->config);
+      Serial.print(",0x"); Serial.print(arduino_pwm[i].dev->api);
+      Serial.print(",0x"); Serial.print(arduino_pwm[i].dev->state);
+      Serial.print(",0x"); Serial.print(arduino_pwm[i].dev->data);
+    Serial.print(") "); Serial.print(arduino_pwm[i].channel);
+    Serial.print(" "); Serial.print(arduino_pwm[i].period);
+    Serial.print(" "); Serial.println(arduino_pwm[i].flags);
+  }
+  Serial.println("\nPWM Pin table:");
+  for (int i = 0; i < (sizeof(arduino_pwm_pins) / sizeof(arduino_pwm_pins[0])); i++) {
+    Serial.print("\t"); Serial.print(i);
+    Serial.print(" "); Serial.println(arduino_pwm_pins[i]);
 }
 
 void print_timer_info(int iTimer) {
