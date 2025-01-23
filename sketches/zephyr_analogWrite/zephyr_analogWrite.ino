@@ -1,5 +1,5 @@
-#define analog_pin 10
-#define toggle_pin 3
+uint8_t analog_pin = 2;
+#define toggle_pin 31
 void setup() {
     // put your setup code here, to run once:
     Serial.begin(115200);
@@ -13,10 +13,22 @@ void setup() {
 
 void maybe_pause() {
     if (Serial.available()) {
+        int ch;
+        uint8_t new_awPin = 0;
         while (Serial.read() != -1) {}
         Serial.println("Paused");
-        while (Serial.read() == -1) {}
+        while ((ch = Serial.read()) == -1) {}
+        while ((ch >= '0') && (ch <= '9')) {
+          new_awPin = new_awPin * 10 + ch - '0';
+          ch = Serial.read();
+        }
+
         while (Serial.read() != -1) {}
+
+        if (new_awPin != 0) {
+          analogWrite(analog_pin, 0);
+          analog_pin = new_awPin;
+        }
 
         Serial.print("CR1: 0x"); Serial.println (TIM1->CR1, HEX);
         Serial.print("CR2: 0x"); Serial.println (TIM1->CR2, HEX);

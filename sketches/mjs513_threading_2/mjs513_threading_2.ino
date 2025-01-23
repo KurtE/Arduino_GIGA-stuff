@@ -20,7 +20,7 @@ void thread0(void) {
         /* STEP 6 - Make the thread yield */
         // k_yield();
         /* STEP 10 - Put the thread to sleep */
-        k_msleep(5);
+        k_msleep(200);
         /* Remember to comment out the line from STEP 6 */
     }
 }
@@ -32,7 +32,7 @@ void thread1(void) {
         /* STEP 8 - Make the thread yield */
         // k_yield();
         /* STEP 10 - Put the thread to sleep */
-        k_msleep(10);
+        k_msleep(100);
         /* Remember to comment out the line from STEP 8 */
     }
 }
@@ -41,8 +41,10 @@ void thread1(void) {
 K_THREAD_DEFINE(thread0_id, STACKSIZE, thread0, NULL, NULL, NULL, THREAD0_PRIORITY, 0, 0);
 K_THREAD_DEFINE(thread1_id, STACKSIZE, thread1, NULL, NULL, NULL, THREAD1_PRIORITY, 0, 0);
 
+#if 0
 #define _FOREACH_STATIC_THREAD(thread_data) \
     STRUCT_SECTION_FOREACH(_static_thread_data, thread_data)
+#endif
 
 void setup() {
     // put your setup code here, to run once:
@@ -63,6 +65,7 @@ void setup() {
     printk("main TID:%x pri:%d\n", (uint32_t)our_tid, main_pri);
     printk("thread0: %x %d\n", (uint32_t)thread0_id, k_thread_priority_get(thread0_id));
     printk("thread1: %x %d\n", (uint32_t)thread1_id, k_thread_priority_get(thread1_id));
+#if 0
     _FOREACH_STATIC_THREAD(thread_data) {
 
         printk("static thread: %p init_thread:%p entry:%p init_thread:%p name:%s stack:%p %u\n", thread_data, thread_data->init_thread,
@@ -74,7 +77,7 @@ void setup() {
 
         k_thread_start(thread_data->init_thread);
     }
-
+#endif
     Serial.println("End Setup");
 }
 
