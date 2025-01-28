@@ -32,8 +32,9 @@ int ledPin = LED_BUILTIN;  // select the pin for the LED
 int sensorValue = 0;       // variable to store the value coming from the sensor
 int sensorValuePrev = -1;
 const int analog_pins[] = { A0, A1, A2, A3, A4, A5, A6, A7, 0, 1, 2, 3 };
+#ifndef ARDUINO_ARDUINO_NANO33BLE
 const PureAnalogPin *pure_pins[] = { &A8, &A9, &A10, &A11 };
-
+#endif
 
 void setup() {
     // declare the ledPin as an OUTPUT:
@@ -45,7 +46,11 @@ void setup() {
 
 void loop() {
     // read the value from the sensor:
+#ifndef ARDUINO_ARDUINO_NANO33BLE
     sensorValue = (sensorPin >= A0) ? analogRead(sensorPin) : analogRead(*pure_pins[sensorPin]);
+#else
+    sensorValue = analogRead(sensorPin);
+#endif
     if (sensorValue != sensorValuePrev) {
         Serial.println(sensorValue);
         sensorValuePrev = sensorValue;
