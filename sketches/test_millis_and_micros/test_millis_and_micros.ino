@@ -4,13 +4,12 @@ void setup() {
   while (!Serial && millis() < 5000) {}
   Serial.println("\nTest millis and Micros");
   Serial.println(micros());
-
 }
 
 void loop() {
   unsigned long start_us = micros();
   unsigned long start_ms = millis();
-  delay(1000); 
+  delay(1000);
 
   unsigned long end_us = micros();
   unsigned long end_ms = millis();
@@ -28,7 +27,7 @@ void loop() {
   Serial.print(k_cycle_get_32());
   Serial.print(" KC64: ");
   Serial.print(k_cycle_get_64());
-  
+
 
   Serial.print("\tMS: ");
   Serial.print(start_ms);
