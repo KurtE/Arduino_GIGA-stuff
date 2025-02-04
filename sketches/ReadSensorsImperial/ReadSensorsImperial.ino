@@ -21,7 +21,7 @@ void print_nrf_gpio(NRF_GPIO_Type *pX) {
   Serial.print(" DETECTMODE:"); Serial.print(pX->DETECTMODE, HEX);
   for(uint8_t i = 0; i < 32; i++) {
     if ((i & 0x7) == 0)Serial.print("\n\t");
-    Serial.print(pX->PIN_CNF[i]);
+    Serial.print(pX->PIN_CNF[i], HEX);
     Serial.print(" ");
   }
   Serial.println();
@@ -29,17 +29,25 @@ void print_nrf_gpio(NRF_GPIO_Type *pX) {
 }
 
 void setup() {
+  Serial1.begin(115200);
   Serial.begin(9600);
   while (!Serial);
 
   // BUGBUG: lets try to see the initial state of the pins:
   // port0 0x50000000
   // port1 0x50000300
+  #if defined(ARDUINO_ARCH_MBED_NANO)
+  Serial.println("\n*** Running on MBED ***");
+  #elif defined(ARDUINO_ARCH_ZEPHYR)
+  Serial.println("\n*** Running on Zephyr ***");
+  #else
+  Serial.println("\n *** Running on something else ***");
+  #endif
   Serial.println("\nGPIO P0 registers");
   print_nrf_gpio(NRF_P0);
   Serial.println("\nGPIO P1 registers");
   print_nrf_gpio(NRF_P1);
-  #ifdef __ZEPHYR__
+  #if 0 //def __ZEPHYR__
   pinMode(32, OUTPUT); //I2C_PULL
   digitalWrite(32, HIGH);
   pinMode(33, OUTPUT); //VDD_ENV_ENABLE
@@ -69,6 +77,7 @@ void setup() {
   Serial.println("Humidity temperature sensor initialized!");
 }
 
+
 void loop() {
   // Passing in FAHRENHEIT as the unit parameter to ENV.readTemperature(...),
   // allows you to read the sensor values in imperial units
@@ -92,5 +101,6 @@ void loop() {
   Serial.println();
 
   // wait 1 second to print again
-  delay(1000);
+  delay(10000);
 }
+
