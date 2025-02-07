@@ -1,7 +1,6 @@
-#define digitalWriteFast digitalWrite
-#define digitalReadFast digitalRead
 
 const char *pin_names[] = {
+  // clang-format off
             "PH_15", "PK_1", "PJ_11", "PG_7", "PC_7", "PC_6", "PA_8", "PI_0", "PC_3", "PI_1",
             "PC_2", "PH_8", "PH_7", "PA_10", "PA_9", "PA_0C", "PA_1C", "PC_2C", "PC_3C", "PC_2_ALT0",
             "PC_3_ALT0", "PA_4", "PA_6", "PK_5", "PK_6", "PK_7",
@@ -27,146 +26,203 @@ const char *pin_names[] = {
             "PJ_0", "PJ_1", "PJ_2", "PJ_3", "PJ_4", "PJ_5", "PJ_6", "PJ_7", 
             "PJ_8", "PJ_9", "PJ_10", "PJ_11", "PJ_12","PJ_13", "PJ_14", "PJ_15", 
             "PK_0", "PK_1", "PK_2", "PK_3", "PK_4", "PK_5", "PK_6", "PK_7",
+
+  // clang-format on
 };
 
-uint8_t count_pin_names = sizeof(pin_names) / sizeof(pin_names[1]);
+const uint8_t count_pin_names = sizeof(pin_names) / sizeof(pin_names[1]);
 uint8_t pin_test_mode = 1;
+
+uint8_t pinLast[count_pin_names] = {
+  // clang-format off
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0xff, 0xff, 
+    0, 0xff, 0, 0xff, 0, 0, 0, 0, 0, 0,
+    0, 0xff, 0xff, 0xff, 0, 0, 0, 0xff, 0, 0,
+    0, 0, 0xff, 0xff, 0xff, 0xff, 0, 0, 0xff, 0xff,
+    0, 0, 0xff, 0xff, 0, 0, 0xff, 0xff, 0xff, 0xff,
+    0xff, 0, 0xff, 0, 0xff, 0xff, 0xff, 0, 0, 0,
+    0, 0, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+    0xff, 0xff, 0, 0, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+    0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+    0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+    0xff, 0xff, 0xff, 0xff, 0xff, 0, 0xff, 0xff, 0xff, 0,
+    0xff, 0, 0, 0xff, 0xff, 0xff, 0, 0xff, 0xff, 0xff,
+    0xff, 0xff, 0xff, 0xff, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0xff, 0xff, 0, 0, 0, 0xff,
+    0xff, 0xff, 0xff, 0xff, 0xff, 0, 0, 0, 0, 0,
+    0, 0xff, 0xff, 0xff, 0xff, 0xff, 0, 0xff, 0xff, 0xff,
+    0xff, 0xff, 0xff
+  // clang-format on
+};
+
+
 
 extern void allPinTest();
 extern void testForShorts();
+
 void setup() {
   Serial.begin(115200);
-  while (!Serial && millis() < 10000 );
+  while (!Serial && millis() < 10000)
+    ;
   //Serial.println("Compile Time:: " __FILE__ " " __DATE__ " " __TIME__);
   Serial.print("NUM_DIGITAL_PINS: ");
   Serial.println(NUM_DIGITAL_PINS, DEC);
   Serial.print("PINS_COUNT: ");
   Serial.println(PINS_COUNT);
+  Serial.println("Pins included in test:");
+  int index_first_in_series = -1;
+  for (int i = 0; i < PINS_COUNT; i++) {
+    if (pinLast[i] != 0xff) {
+      if (index_first_in_series == -1) index_first_in_series = i;
+    } else {
+      // end of series
+      if (index_first_in_series != -1) {
+        Serial.print(" ");
+        Serial.print(index_first_in_series);
+        if (index_first_in_series != (i - 1)) {
+          Serial.print("-");
+          Serial.print(i - 1);
+        }
+        index_first_in_series = -1;
+      }
+    }
+  }
+  Serial.println();
   Serial.flush();
 
   testForShorts();
-  
 }
 
 void loop() {
-    allPinTest( );
+  allPinTest();
 }
 
-uint32_t pinLast[NUM_DIGITAL_PINS];
+
 void allPinTest() {
   uint32_t ii;
   Serial.print("PULLUP Start Vals:\n  ");
   Serial.print("PULLUP :: TEST to GND\n  ");
-  for ( ii = 0; ii < NUM_DIGITAL_PINS; ii++) {
-    pinMode( ii, INPUT_PULLUP );
-    delayMicroseconds( 5 );
-    pinLast[ii] = digitalReadFast( ii );
-    if (!pinLast[ii]) {
-      Serial.print("\nd#=");
-      Serial.print( ii );
-      Serial.print( " val=" );
+  for (ii = 0; ii < PINS_COUNT; ii++) {
+    if (pinLast[ii] != 0xff) {
+      if ((ii==0) || (pinLast[ii-1] == 0xff)) {
+        Serial.print("\n(");
+        Serial.print(ii);
+        Serial.print(") ");
+        Serial.flush();
+      }
+      pinMode(ii, INPUT_PULLUP);
+      delayMicroseconds(5);
+      pinLast[ii] = digitalRead(ii);
+      if (!pinLast[ii]) {
+        Serial.print("\nd#=");
+        Serial.print(ii);
+        Serial.print(" val=");
+      }
+      Serial.print(pinLast[ii]);
+      Serial.print(',');
     }
-    Serial.print( pinLast[ii] );
-    Serial.print(',');
   }
   Serial.println();
   Serial.println();
-  while ( 1 ) {
-    uint32_t jj, dd = 0, cc = 0, ee=4;
+  while (1) {
+    uint32_t jj, dd = 0, cc = 0, ee = 4;
     cc = 0;
-    for ( ii = 0; ii < NUM_DIGITAL_PINS; ii++) {
-      jj = digitalReadFast( ii );
-      if ( jj != pinLast[ii] ) {
-        dd = 1;
-        cc++;
-        pinLast[ii] = jj;
-        Serial.print("d#=");
-        Serial.print( ii );
-        if (ii < count_pin_names) {
-          Serial.print("(");
-          Serial.print(pin_names[ii]);
-          Serial.print(")");
+    for (ii = 0; ii < PINS_COUNT; ii++) {
+      if (pinLast[ii] != 0xff) {
+        jj = digitalRead(ii);
+        if (jj != pinLast[ii]) {
+          dd = 1;
+          cc++;
+          pinLast[ii] = jj;
+          Serial.print("d#=");
+          Serial.print(ii);
+          if (ii < count_pin_names) {
+            Serial.print("(");
+            Serial.print(pin_names[ii]);
+            Serial.print(")");
+          }
+          if (pinLast[ii]) Serial.print("\t");
+          Serial.print(" val=");
+          Serial.print(pinLast[ii]);
+          Serial.print(',');
         }
-        if ( pinLast[ii] ) Serial.print( "\t" );
-        Serial.print( " val=" );
-        Serial.print( pinLast[ii] );
-        Serial.print(',');
+        if (cc > 1 && ee) {
+          Serial.println(">>> MULTI CHANGE !!");
+          ee--;
+        }
       }
-      if ( cc > 1 && ee ) {
-        Serial.println(">>> MULTI CHANGE !!");
-        ee--;
+    }
+    if (dd) {
+      dd = 0;
+      Serial.println();
+      delay(50);
+    }
+
+    if (Serial.available()) {
+      while (Serial.available()) Serial.read();
+      if (0 == pin_test_mode) {
+        pin_test_mode = 1;
+        Serial.print("PULLUP :: TEST TO GND\n  ");
+      } else {
+        pin_test_mode = 0;
+        Serial.print("PULLDOWN :: TEST to 3.3V\n  ");
       }
-#if 1
-      if ( Serial.available() ) {
-        while ( Serial.available() ) Serial.read();
-        if ( 0 == pin_test_mode ) {
-          pin_test_mode = 1;
-          Serial.print("PULLUP :: TEST TO GND\n  ");
-        }
-        else {
-          pin_test_mode = 0;
-          Serial.print("PULLDOWN :: TEST to 3.3V\n  ");
-        }
-        for ( ii = 0; ii < NUM_DIGITAL_PINS; ii++) {
-          if ( 0 == pin_test_mode )
-            pinMode( ii, INPUT_PULLDOWN );
+      for (ii = 0; ii < PINS_COUNT; ii++) {
+        if (pinLast[ii] != 0xff) {
+          if (0 == pin_test_mode)
+            pinMode(ii, INPUT_PULLDOWN);
           else
-            pinMode( ii, INPUT_PULLUP );
-          delayMicroseconds( 20 );
-          pinLast[ii] = digitalReadFast( ii );
+            pinMode(ii, INPUT_PULLUP);
+          delayMicroseconds(20);
+          pinLast[ii] = digitalRead(ii);
           if (pin_test_mode != pinLast[ii]) {
             Serial.print("d#=");
-            Serial.print( ii );
+            Serial.print(ii);
             if (ii < count_pin_names) {
               Serial.print("(");
               Serial.print(pin_names[ii]);
               Serial.print(")");
             }
-            Serial.print( " val=" );
-            Serial.println( pinLast[ii] );
+            Serial.print(" val=");
+            Serial.println(pinLast[ii]);
           }
         }
       }
-#endif      
-    }
-    if ( dd ) {
-      dd = 0;
-      Serial.println();
-      delay( 50 );
     }
   }
 }
 
 void testForShorts() {
+#ifdef LATER_MAYBE
   uint32_t ii;
   Serial.print("Quick Test for Shorts to adjacent pin");
-#if 1
-  Serial.println("UNOR4 does not support INPUT_PULLDOWN");
-#else
   Serial.println("First pull pins down and see if the next one follows");
-  for ( ii = 0; ii < NUM_DIGITAL_PINS-1; ii++) {
-    pinMode( ii+1, INPUT_PULLDOWN );
-    pinMode( ii, OUTPUT);
+  for (ii = 0; ii < NUM_DIGITAL_PINS - 1; ii++) {
+    pinMode(ii + 1, INPUT_PULLDOWN);
+    pinMode(ii, OUTPUT);
     digitalWrite(ii, HIGH);
-    delayMicroseconds( 5 );
-    if (digitalRead(ii+1)) {
-      Serial.print(ii,DEC);
+    delayMicroseconds(5);
+    if (digitalRead(ii + 1)) {
+      Serial.print(ii, DEC);
       Serial.print(":");
-      Serial.println(ii+1, DEC);
+      Serial.println(ii + 1, DEC);
     }
   }
-#endif  
   Serial.println("\n Now try Pull up and see if setting low follow");
-  for ( ii = 0; ii < NUM_DIGITAL_PINS-1; ii++) {
-    pinMode( ii+1, INPUT_PULLUP );
-    pinMode( ii, OUTPUT);
+  for (ii = 0; ii < NUM_DIGITAL_PINS - 1; ii++) {
+    pinMode(ii + 1, INPUT_PULLUP);
+    pinMode(ii, OUTPUT);
     digitalWrite(ii, LOW);
-    delayMicroseconds( 5 );
-    if (!digitalRead(ii+1)) {
-      Serial.print(ii,DEC);
+    delayMicroseconds(5);
+    if (!digitalRead(ii + 1)) {
+      Serial.print(ii, DEC);
       Serial.print(":");
-      Serial.println(ii+1, DEC);
+      Serial.println(ii + 1, DEC);
     }
   }
-  Serial.println();  
+  Serial.println();
+#endif
 }
