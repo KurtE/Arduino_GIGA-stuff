@@ -18,7 +18,7 @@ void setup() {
   pinMode(33, OUTPUT); //VDD_ENV_ENABLE
   digitalWrite(33, HIGH);
   delay(500);
-  while (!Serial);
+  while (!Serial && millis() < 5000);
 
 
   Serial.println("Before BARO begin");
@@ -27,6 +27,7 @@ void setup() {
     while (1);
   }
   Serial.println("After BARO begin");
+  printk("End of startup\n");
 }
 
 void loop() {
