@@ -134,6 +134,7 @@ void allPinTest() {
   }
   Serial.println();
   Serial.println();
+  Serial.print(PC_7);
   while (1) {
     uint32_t jj, dd = 0, cc = 0, ee = 4;
     cc = 0;
