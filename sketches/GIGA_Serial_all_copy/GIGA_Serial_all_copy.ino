@@ -1,9 +1,9 @@
 //connect  Serial1 TX -> Serial2 RX, Serial2 TX -> Serial3 RX, Serial3 TX -> Serial4 RX....
 #define USE_SERIAL2
 #define USE_SERIAL3
-#define USE_SERIAL4
+//#define USE_SERIAL4
 
-#define SPD 9600
+#define SPD 115200
 int loop_count = 0;
 
 #define BUFFER_SIZE 80
@@ -32,7 +32,7 @@ void setup() {
   digitalWrite(LED_BUILTIN, LOW);
   while (!Serial && millis() < 4000)
     ;
-  Serial.begin(9600);
+  Serial.begin(SPD);
   delay(800);
   Serial.println("Test all Serials");
   Serial.print("Baud rate: ");
@@ -78,12 +78,12 @@ void CopyFromTo(Stream &SerialF, Stream &SerialT, uint8_t buffer_index) {
   int cb;
   BufferInfoClass *buf = &buffers[buffer_index];
   if ((available = SerialF.available()) != 0) {
-    //Serial.print(buffer_index, DEC);
-    //Serial.print(":Avail: ");
-    //Serial.print(available, DEC);
+    Serial.print(buffer_index, DEC);
+    Serial.print(":Avail: ");
+    Serial.print(available, DEC);
     available_for_write = SerialT.availableForWrite();
-    //Serial.print(" ");
-    //Serial.println(available_for_write, DEC);
+    Serial.print(" ");
+    Serial.println(available_for_write, DEC);
     cb = MIN(MIN(available, available_for_write), BUFFER_SIZE);
     if (cb) {
       SerialF.readBytes(&buf->buffer[buf->cb_buffer], cb);

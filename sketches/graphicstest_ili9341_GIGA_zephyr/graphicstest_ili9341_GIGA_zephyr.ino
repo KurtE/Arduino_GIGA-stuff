@@ -17,13 +17,19 @@
 #include "SPI.h"
 #include <ILI9341_GIGA_zephyr.h>
 // *************** Change to your Pin numbers ***************
+
+#define USE_FRAME_BUFFER 1
+#define TFT_DC 5
+#define TFT_RST 4
+#define TFT_CS 6
+#if defined(ARDUINO_PORTENTA_H7)
+ILI9341_GIGA_n tft(&SPI, TFT_CS, TFT_DC, TFT_RST);
+#else
 #define TFT_DC 9
 #define TFT_RST 8
 #define TFT_CS 10
-
-#define USE_FRAME_BUFFER 1
-
 ILI9341_GIGA_n tft(&SPI1, TFT_CS, TFT_DC, TFT_RST);
+#endif
 //ILI9341_GIGA_n tft(TFT_CS, TFT_DC, TFT_RST);
 
 #define DEBUG_PIN 0
@@ -53,7 +59,7 @@ void setup() {
     Serial.println("ILI9341 Test!");
     pinMode(DEBUG_PIN, OUTPUT);
 //    tft.setSPI(SPI1);  // temporary...
-    tft.begin(30000000);
+    tft.begin(10000000);
     Serial.println("after TFT.begin");
 
     tft.fillScreen(ILI9341_RED);

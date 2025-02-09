@@ -699,9 +699,7 @@ public:
   }
 
   void outputToSPI(uint8_t c) {
-    printk("\tOutputToSPI(%u) ");
     _pspi->transfer(c);
-    printk(" **returned**\n");
   }
 
   void outputToSPI16(uint16_t data) {

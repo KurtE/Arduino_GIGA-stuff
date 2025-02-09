@@ -33,13 +33,15 @@ const char *pin_names[] = {
 const uint8_t count_pin_names = sizeof(pin_names) / sizeof(pin_names[1]);
 uint8_t pin_test_mode = 1;
 
+// manually disabled 16-19/27-28
+// 23-25 as LEDS
 uint8_t pinLast[count_pin_names] = {
   // clang-format off
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0, 0xff, 0xff, 
-    0, 0xff, 0, 0xff, 0, 0, 0, 0, 0, 0,
-    0, 0xff, 0xff, 0xff, 0, 0, 0, 0xff, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0,           // 0
+    0, 0, 0, 0, 0, 0, 0xff, 0xff, 0xff, 0xff,           // 10
+    0, 0, 0, 0xff, 0xff, 0xff, 0, 0xff, 0xff, 0xff,     // 20
+    0, 0xff, 0, 0xff, 0, 0, 0, 0, 0, 0,     // 30
+    0, 0xff, 0xff, 0xff, 0, 0, 0, 0xff, 0, 0, //40
     0, 0, 0xff, 0xff, 0xff, 0xff, 0, 0, 0xff, 0xff,
     0, 0, 0xff, 0xff, 0, 0, 0xff, 0xff, 0xff, 0xff,
     0xff, 0, 0xff, 0, 0xff, 0xff, 0xff, 0, 0, 0,
@@ -58,7 +60,12 @@ uint8_t pinLast[count_pin_names] = {
   // clang-format on
 };
 
-
+#ifndef NUM_DIGITAL_PINS
+#define NUM_DIGITAL_PINS (22u)
+#if DT_PROP_LEN(DT_PATH(zephyr_user), digital_pin_gpios) > 0
+uint16_t PINS_COUNT = DT_PROP_LEN(DT_PATH(zephyr_user), digital_pin_gpios);
+#endif
+#endif
 
 extern void allPinTest();
 extern void testForShorts();
@@ -107,7 +114,7 @@ void allPinTest() {
   Serial.print("PULLUP :: TEST to GND\n  ");
   for (ii = 0; ii < PINS_COUNT; ii++) {
     if (pinLast[ii] != 0xff) {
-      if ((ii==0) || (pinLast[ii-1] == 0xff)) {
+      if ((ii == 0) || (pinLast[ii - 1] == 0xff)) {
         Serial.print("\n(");
         Serial.print(ii);
         Serial.print(") ");
@@ -148,10 +155,10 @@ void allPinTest() {
           Serial.print(" val=");
           Serial.print(pinLast[ii]);
           Serial.print(',');
-        }
-        if (cc > 1 && ee) {
-          Serial.println(">>> MULTI CHANGE !!");
-          ee--;
+          //if (cc > 1 && ee) {
+          //  Serial.println(">>> MULTI CHANGE !!");
+          //  ee--;
+          //}
         }
       }
     }
