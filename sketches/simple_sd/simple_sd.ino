@@ -18,7 +18,7 @@
 #define DEBUG_PIN 4
 
 // SDCARD_SS_PIN is defined for the built-in SD on some boards.
-const uint8_t SD_CS_PIN = 5;
+const uint8_t SD_CS_PIN = 6;
 
 // Try max SPI clock for an SD. Reduce SPI_CLOCK if errors occur.
 #define SPI_CLOCK SD_SCK_MHZ(12)
@@ -74,7 +74,7 @@ void setup() {
 //    SPI1.endTransaction();
 
     //digitalWrite(DEBUG_PIN, HIGH);  // make sure display does not interfere
-    //if (!sd.cardBegin(SD_CONFIG)) 
+    if (!sd.cardBegin(SD_CONFIG)) 
     {
 //        digitalWrite(DEBUG_PIN, LOW);  // make sure display does not interfere
         Serial.print("Card Begin failed Error: ");
@@ -83,14 +83,15 @@ void setup() {
     }
     //digitalWrite(DEBUG_PIN, LOW);  // make sure display does not interfere
 
-    //if (!sd.volumeBegin()) 
+    if (!sd.volumeBegin()) 
     {
         Serial.println("Volume begin failed");
         while (1) {}
     }
 
     Serial.println("List of files on the SD.\n");
-    //sd.ls(LS_R);
+    sd.ls(LS_R);
+    Serial.println("--- End of List ---");
 }
 
 void loop() {
