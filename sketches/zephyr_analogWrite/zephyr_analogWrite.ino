@@ -1,7 +1,7 @@
 uint8_t analog_pin = 2;
 
 void print_gpio_regs(const char* name, GPIO_TypeDef* port) {
-  printk("GPIO%s(%p) %08X %08X %08x\n", name, port, port->MODER, port->AFR[0], port->AFR[1]);
+  //printk("GPIO%s(%p) %08X %08X %08x\n", name, port, port->MODER, port->AFR[0], port->AFR[1]);
   Serial.print("GPIO");
   Serial.print(name);
   Serial.print(" ");
@@ -12,13 +12,28 @@ void print_gpio_regs(const char* name, GPIO_TypeDef* port) {
   Serial.println(port->AFR[1], HEX);
 }
 
+void show_all_gpio_regs() {
+    print_gpio_regs("A", GPIOA);
+    print_gpio_regs("B", GPIOB);
+    print_gpio_regs("C", GPIOC);
+    print_gpio_regs("D", GPIOD);
+    print_gpio_regs("E", GPIOE);
+    print_gpio_regs("F", GPIOF);
+    print_gpio_regs("G", GPIOG);
+    print_gpio_regs("H", GPIOH);
+    print_gpio_regs("I", GPIOI);
+    print_gpio_regs("J", GPIOJ);
+    print_gpio_regs("K", GPIOK);
+}
+
+#if defined(__ZEPHYR__)
 #include <cmsis_core.h>
 #include <zephyr/init.h>
 #include <zephyr/kernel.h>
 #include <zephyr/device.h>
 #include <zephyr/drivers/clock_control.h>
 #include <zephyr/logging/log.h>
-
+#endif
 
 
 #define toggle_pin 12  //31
@@ -32,12 +47,13 @@ void setup() {
   pinMode(toggle_pin, OUTPUT);
   delay(1000);
 
-  Serial.print("Enter something if you want to start cam colock");
+#if 0 // defined(__ZEPHYR__)
+  Serial.println("Enter something if you want to start cam colock");
   while (Serial.read() != -1) {}
   int ich;
   while ((ich = Serial.read()) == -1) {};
   while (Serial.read() != -1) {}
-
+  show_all_gpio_regs();
   if (ich >= ' ') {
     Serial.println("*** Getting PWM clock ***");
     const struct device* cam_ext_clk_dev = DEVICE_DT_GET(DT_NODELABEL(pwmclock));
@@ -54,41 +70,37 @@ void setup() {
     ret = clock_control_get_rate(cam_ext_clk_dev, (clock_control_subsys_t)0, &rate);
     Serial.print("Rate: ");
     Serial.println(rate);
+    show_all_gpio_regs();
+  } else {
+    Serial.println("Not updating PWM Clock");
   }
+#endif
 }
 
 void maybe_pause() {
   if (Serial.available()) {
     int ch;
-    uint8_t new_awPin = 0;
+    uint8_t new_awPin = 0xff;
     while (Serial.read() != -1) {}
     Serial.println("Paused");
     while ((ch = Serial.read()) == -1) {}
     while ((ch >= '0') && (ch <= '9')) {
+      if (new_awPin == 0xff) new_awPin = 0;
       new_awPin = new_awPin * 10 + ch - '0';
       ch = Serial.read();
     }
 
     while (Serial.read() != -1) {}
 
-    if (new_awPin != 0) {
+    if (new_awPin != 0xff) {
       analogWrite(analog_pin, 0);
       analog_pin = new_awPin;
+      Serial.print("Now PWM to pin: ");
+      Serial.println(analog_pin);
+      //show_all_gpio_regs();
     }
-    print_gpio_regs("A", GPIOA);
-    print_gpio_regs("B", GPIOB);
-    print_gpio_regs("C", GPIOC);
-    print_gpio_regs("D", GPIOD);
-    print_gpio_regs("E", GPIOE);
-    print_gpio_regs("F", GPIOF);
-    print_gpio_regs("G", GPIOG);
-    print_gpio_regs("H", GPIOH);
-    print_gpio_regs("I", GPIOI);
-    print_gpio_regs("J", GPIOJ);
-    print_gpio_regs("K", GPIOK);
 
-
-
+    #if 0
     Serial.print("CR1: 0x");
     Serial.println(TIM1->CR1, HEX);
     Serial.print("CR2: 0x");
@@ -141,12 +153,14 @@ void maybe_pause() {
     Serial.println(TIM1->AF2, HEX);
     Serial.print("TISEL: 0x");
     Serial.println(TIM1->TISEL, HEX);
+    #endif
   }
 }
 
 void loop() {
   // put your main code here, to run repeatedly:
   digitalWrite(toggle_pin, !digitalRead(toggle_pin));
+  delay(5);
   digitalWrite(toggle_pin, !digitalRead(toggle_pin));
   for (int i = 0; i < 256; i += 32) {
     analogWrite(analog_pin, i);
@@ -156,6 +170,7 @@ void loop() {
   }
 
   digitalWrite(toggle_pin, !digitalRead(toggle_pin));
+  delay(1);
   digitalWrite(toggle_pin, !digitalRead(toggle_pin));
   for (int i = 255; i >= 0; i -= 32) {
     analogWrite(analog_pin, i);

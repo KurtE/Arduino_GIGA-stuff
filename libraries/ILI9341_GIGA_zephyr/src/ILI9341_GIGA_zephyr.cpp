@@ -1287,9 +1287,9 @@ void ILI9341_GIGA_n::begin(uint32_t spi_clock, uint32_t spi_clock_read) {
   if (_pspi == nullptr)
     _pspi = &SPI;
 
-  printk("Before SPI %p begin\n", _pspi);
+  //printk("Before SPI %p begin\n", _pspi);
   _pspi->begin();
-  printk("\tAfter\n");
+  //printk("\tAfter\n");
 
   pinMode(_cs, OUTPUT);
   digitalWrite(_cs, HIGH);
@@ -1320,20 +1320,20 @@ void ILI9341_GIGA_n::begin(uint32_t spi_clock, uint32_t spi_clock_read) {
           x = readcommand8(ILI9341_RDSELFDIAG);
           Serial.print("\nSelf Diagnostic: 0x"); Serial.println(x, HEX);
   */
-  printk("\tBefore beginSPITransaction(%u)\n", _SPI_CLOCK/4);
+  //printk("\tBefore beginSPITransaction(%u)\n", _SPI_CLOCK/4);
   beginSPITransaction(_SPI_CLOCK/4);
   const uint8_t *addr = init_commands;
   while (1) {
     uint8_t count = *addr++;
     if (count-- == 0)
       break;
-    printk("\tWC:%x ", *addr);
+    //printk("\tWC:%x ", *addr);
     writecommand_cont(*addr++);
     while (count-- > 0) {
-      printk(" %x", *addr);
+      //printk(" %x", *addr);
       writedata8_cont(*addr++);
     }
-    printk("\n", *addr);
+    //printk("\n", *addr);
   }
   writecommand_last(ILI9341_SLPOUT); // Exit Sleep
   endSPITransaction();
