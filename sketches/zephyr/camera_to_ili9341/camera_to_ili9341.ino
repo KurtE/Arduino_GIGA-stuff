@@ -4,10 +4,17 @@
 Camera cam;
 
 
+#ifdef ARDUINO_PORTENTA_H7
+#define TFT_DC 5
+#define TFT_RST 4
+#define TFT_CS 3
+ILI9341_GIGA_n tft(&SPI, TFT_CS, TFT_DC, TFT_RST);
+#else
 #define TFT_DC 9
 #define TFT_RST 8
 #define TFT_CS 10
 ILI9341_GIGA_n tft(&SPI1, TFT_CS, TFT_DC, TFT_RST);
+#endif
 
 void fatal_error(const char *msg) {
   Serial.println(msg);
@@ -24,6 +31,12 @@ void fatal_error(const char *msg) {
 
 void setup() {
   pinMode(LED_BUILTIN, OUTPUT);
+  for (int i = 0; i < 5; i++) {
+    digitalWrite(LED_BUILTIN, HIGH);
+    delay(250);
+    digitalWrite(LED_BUILTIN, LOW);
+    delay(250);
+  }
 
   Serial.begin(115200);
   while (!Serial && millis() < 5000) {}

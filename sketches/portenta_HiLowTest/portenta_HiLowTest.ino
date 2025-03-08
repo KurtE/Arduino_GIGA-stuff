@@ -62,10 +62,13 @@ uint8_t pinLast[count_pin_names] = {
 
 #ifndef NUM_DIGITAL_PINS
 #define NUM_DIGITAL_PINS (22u)
-#if DT_PROP_LEN(DT_PATH(zephyr_user), digital_pin_gpios) > 0
-uint16_t PINS_COUNT = DT_PROP_LEN(DT_PATH(zephyr_user), digital_pin_gpios);
+//#if DT_PROP_LEN(DT_PATH(zephyr_user), digital_pin_gpios) > 0
+//uint16_t PINS_COUNT = DT_PROP_LEN(DT_PATH(zephyr_user), digital_pin_gpios);
+const uint8_t PINS_COUNT = sizeof(pinLast);
+//#endif
 #endif
-#endif
+
+bool pins_changed[count_pin_names];
 
 extern void allPinTest();
 extern void testForShorts();
@@ -110,6 +113,8 @@ void loop() {
 
 void allPinTest() {
   uint32_t ii;
+  for(ii=0; ii < PINS_COUNT; ii++) pins_changed[ii] = false;
+
   Serial.print("PULLUP Start Vals:\n  ");
   Serial.print("PULLUP :: TEST to GND\n  ");
   for (ii = 0; ii < PINS_COUNT; ii++) {
@@ -141,6 +146,7 @@ void allPinTest() {
       if (pinLast[ii] != 0xff) {
         jj = digitalRead(ii);
         if (jj != pinLast[ii]) {
+          pins_changed[ii] = true;
           dd = 1;
           cc++;
           pinLast[ii] = jj;
@@ -170,6 +176,30 @@ void allPinTest() {
 
     if (Serial.available()) {
       while (Serial.available()) Serial.read();
+    
+      Serial.println("Pins that were touched: ");
+      bool changed_found = false;
+      for(ii=0; ii < PINS_COUNT; ii++) {
+        if (pins_changed[ii]) {
+          pins_changed[ii] = false;
+          if (!changed_found) {
+            changed_found = true;
+            Serial.print(" ");
+            Serial.print(ii);
+          }
+        } else if (changed_found) {
+          Serial.print("-");
+          Serial.print(ii-1);
+          changed_found = false;
+        }
+      }
+      if (changed_found) {
+        Serial.print("-");
+        Serial.print(-1);
+        changed_found = false;
+      }
+      Serial.println();
+
       if (0 == pin_test_mode) {
         pin_test_mode = 1;
         Serial.print("PULLUP :: TEST TO GND\n  ");
