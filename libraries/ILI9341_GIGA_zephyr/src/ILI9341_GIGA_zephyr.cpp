@@ -71,7 +71,67 @@ uint16_t ILI9341_GIGA_n::s_row_buff[320]; //
 // Constructor when using hardware ILI9241_KINETISK__pspi->  Faster, but must
 // use SPI pins
 // specific to each board type (e.g. 11,13 for Uno, 51,52 for Mega, etc.)
+#ifdef ZEPHYR_PINNAMES_H
 
+// Pin Name versions
+ILI9341_GIGA_n::ILI9341_GIGA_n(SPIClass *pspi, PinName cs_pin, PinName dc_pin, PinName rst_pin) : 
+    _pspi(pspi), _cs(cs_pin), _dc(dc_pin), _rst(rst_pin) 
+{
+#ifdef ENABLE_ILI9341_FRAMEBUFFER
+  _pfbtft = NULL;
+  _use_fbtft = 0; // Are we in frame buffer mode?
+  _we_allocated_buffer = NULL;
+#endif
+}
+
+ILI9341_GIGA_n::ILI9341_GIGA_n(PinName cs_pin, PinName dc_pin, PinName rst_pin) :
+    _cs(cs_pin), _dc(dc_pin), _rst(rst_pin) 
+  {
+  // Added to see how much impact actually using non hardware CS pin might be
+  //_cspinmask = 0;
+  //_csport = NULL;
+
+#ifdef ENABLE_ILI9341_FRAMEBUFFER
+  _pfbtft = NULL;
+  _use_fbtft = 0; // Are we in frame buffer mode?
+  _we_allocated_buffer = NULL;
+#endif
+
+}
+
+ILI9341_GIGA_n::ILI9341_GIGA_n(SPIClass *pspi, uint8_t cs_pin, uint8_t dc_pin, uint8_t rst_pin) : 
+    _pspi(pspi) 
+{
+  _cs = digitalPinToPinName(cs_pin);
+  _dc = digitalPinToPinName(dc_pin);
+  _rst = digitalPinToPinName(rst_pin);
+#ifdef ENABLE_ILI9341_FRAMEBUFFER
+  _pfbtft = NULL;
+  _use_fbtft = 0; // Are we in frame buffer mode?
+  _we_allocated_buffer = NULL;
+#endif
+}
+
+ILI9341_GIGA_n::ILI9341_GIGA_n(uint8_t cs_pin, uint8_t dc_pin, uint8_t rst_pin)
+  {
+  // Added to see how much impact actually using non hardware CS pin might be
+  //_cspinmask = 0;
+  //_csport = NULL;
+
+  _cs = digitalPinToPinName(cs_pin);
+  _dc = digitalPinToPinName(dc_pin);
+  _rst = digitalPinToPinName(rst_pin);
+
+#ifdef ENABLE_ILI9341_FRAMEBUFFER
+  _pfbtft = NULL;
+  _use_fbtft = 0; // Are we in frame buffer mode?
+  _we_allocated_buffer = NULL;
+#endif
+
+}
+
+
+#else
 ILI9341_GIGA_n::ILI9341_GIGA_n(SPIClass *pspi, uint8_t cs_pin, uint8_t dc_pin, uint8_t rst_pin) : 
     _pspi(pspi), _cs(cs_pin), _dc(dc_pin), _rst(rst_pin) 
 {
@@ -96,7 +156,7 @@ ILI9341_GIGA_n::ILI9341_GIGA_n(uint8_t cs_pin, uint8_t dc_pin, uint8_t rst_pin) 
 #endif
 
 }
-
+#endif
 
 //=======================================================================
 

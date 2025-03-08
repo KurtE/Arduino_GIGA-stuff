@@ -241,6 +241,14 @@ public:
   ILI9341_GIGA_n(SPIClass *pspi, uint8_t CS, uint8_t DC, uint8_t RST = 255);
   
   ILI9341_GIGA_n(uint8_t cs_pin, uint8_t dc_pin, uint8_t rst_pin = 255);
+
+  #ifdef ZEPHYR_PINNAMES_H
+  // Allow Pin Names to be used if defined.
+  ILI9341_GIGA_n(SPIClass *pspi, PinName CS, PinName DC, PinName RST = NC);
+  ILI9341_GIGA_n(PinName cs_pin, PinName dc_pin, PinName PinName = NC);
+  #endif
+
+
   // Constructor
   //   CS: Chip select pin,  DC: Data/Command pin
   //   RST: optional reset pin
@@ -603,7 +611,11 @@ public:
   uint16_t _gfx_last_char_textbgcolor = 0;
   bool gfxFontLastCharPosFG(int16_t x, int16_t y);
 
+  #ifdef ZEPHYR_PINNAMES_H
+  PinName _cs, _dc, _rst;
+  #else
   uint8_t _cs, _dc, _rst;
+  #endif
   //uint8_t pcs_data, pcs_command;
   //uint8_t _miso, _mosi, _sclk;
 

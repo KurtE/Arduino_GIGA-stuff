@@ -1,6 +1,7 @@
-
 #ifndef ZEPHYR_PINNAMES_H
 #define ZEPHYR_PINNAMES_H
+
+#define PINNAMES_FROM_SKETCH
 
 #ifdef __cplusplus
 extern "C" {
@@ -298,9 +299,11 @@ typedef enum {
 }
 
 // overloads - only cpp as c does not allow overloads of functions
-void pinMode(PinName pinNumber, PinMode pinMode);
+void pinMode(PinName pinNumber, PinMode mode);
 void digitalWrite(PinName pinNumber, PinStatus status);
 int PinNameToIndex(PinName P);
+PinName digitalPinToPinName(pin_size_t P);
+
 #endif
 
 #endif

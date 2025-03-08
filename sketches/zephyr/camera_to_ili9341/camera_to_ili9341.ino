@@ -5,9 +5,15 @@ Camera cam;
 
 
 #ifdef ARDUINO_PORTENTA_H7
+#ifdef ZEPHYR_PINNAMES_H
 #define TFT_DC 5
 #define TFT_RST 4
 #define TFT_CS 3
+#else
+#define TFT_DC PC_6
+#define TFT_RST PC_7
+#define TFT_CS PG_7
+#endif
 ILI9341_GIGA_n tft(&SPI, TFT_CS, TFT_DC, TFT_RST);
 #else
 #define TFT_DC 9
