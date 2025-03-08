@@ -3,16 +3,15 @@
 
 Camera cam;
 
-
 #ifdef ARDUINO_PORTENTA_H7
 #ifdef ZEPHYR_PINNAMES_H
-#define TFT_DC 5
-#define TFT_RST 4
-#define TFT_CS 3
-#else
 #define TFT_DC PC_6
 #define TFT_RST PC_7
 #define TFT_CS PG_7
+#else
+#define TFT_DC 5
+#define TFT_RST 4
+#define TFT_CS 3
 #endif
 ILI9341_GIGA_n tft(&SPI, TFT_CS, TFT_DC, TFT_RST);
 #else
@@ -37,13 +36,6 @@ void fatal_error(const char *msg) {
 
 void setup() {
   pinMode(LED_BUILTIN, OUTPUT);
-  for (int i = 0; i < 5; i++) {
-    digitalWrite(LED_BUILTIN, HIGH);
-    delay(250);
-    digitalWrite(LED_BUILTIN, LOW);
-    delay(250);
-  }
-
   Serial.begin(115200);
   while (!Serial && millis() < 5000) {}
 
@@ -79,5 +71,4 @@ void loop() {
     tft.writeSubImageRect(0, 0, 320, 240, 0, 0, 320, 240, (const uint16_t*)fb.getBuffer());
     cam.releaseFrame(fb);
   }
-
 }
