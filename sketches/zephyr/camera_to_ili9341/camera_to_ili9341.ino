@@ -41,7 +41,7 @@ void setup() {
 
   // put your setup code here, to run once:
   Serial.println("\n*** start display camera image on ILI9341 ***");
-  tft.begin();
+  tft.begin(16000000);
   tft.setRotation(1);
   tft.fillScreen(ILI9341_BLACK);
   delay(500);
@@ -54,7 +54,7 @@ void setup() {
   tft.fillScreen(ILI9341_BLACK);
   delay(500);
 
-  if (!cam.begin(320, 240, CAMERA_RGB565)) {
+  if (!cam.begin(320, 240, CAMERA_RGB565, false)) {
     fatal_error("Camera begin failed");
   }
   cam.setVerticalFlip(false);
@@ -66,9 +66,9 @@ void loop() {
   FrameBuffer fb;
   if (cam.grabFrame(fb)) {
     digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
-    //tft.writeRect(0, 0, 320, 240, (const uint16_t*)fb.getBuffer());
+    tft.writeRect(0, 0, 320, 240, (const uint16_t*)fb.getBuffer());
     //tft.writeSubImageRectBytesReversed(0, 0, 320, 240, 0, 0, 320, 240, (const uint16_t*)fb.getBuffer());
-    tft.writeSubImageRect(0, 0, 320, 240, 0, 0, 320, 240, (const uint16_t*)fb.getBuffer());
+    //tft.writeSubImageRect(0, 0, 320, 240, 0, 0, 320, 240, (const uint16_t*)fb.getBuffer());
     cam.releaseFrame(fb);
   }
 }
