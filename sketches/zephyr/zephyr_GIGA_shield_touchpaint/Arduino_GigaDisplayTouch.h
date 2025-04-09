@@ -67,30 +67,7 @@ struct GDTpoint_s {
  */
 class Arduino_GigaDisplayTouch {
   public:  
-    /**
-     * @brief Construct a new touch controller for Giga Display Shield.
-     *
-     * @param wire A reference to the Wire interface to be used for communication with the touch controller.
-     * @param intPin The interrupt pin number for the touch controller.
-     * @param rstPin The reset pin number for the touch controller.
-     * @param addr The device address for the touch controller.
-     */
-    #if defined(ARDUINO_GIGA)
-      Arduino_GigaDisplayTouch(TwoWire& wire  = Wire1, 
-                               uint8_t intPin = PinNameToIndex(PI_1),
-                               uint8_t rstPin = PinNameToIndex(PI_2), 
-                               uint8_t addr   = GT911_I2C_ADDR_BA_BB);
-    #elif defined(ARDUINO_PORTENTA_H7_M7)
-      Arduino_GigaDisplayTouch(TwoWire& wire  = Wire, 
-                               uint8_t intPin = PinNameToIndex(PD_4),
-                               uint8_t rstPin = PinNameToIndex(PD_5), 
-                               uint8_t addr   = GT911_I2C_ADDR_BA_BB);
-    #else 
-      Arduino_GigaDisplayTouch(TwoWire& wire, 
-                               uint8_t intPin, 
-                               uint8_t rstPin, 
-                               uint8_t addr);
-    #endif
+      Arduino_GigaDisplayTouch();
       ~Arduino_GigaDisplayTouch();
 
 
@@ -119,20 +96,9 @@ class Arduino_GigaDisplayTouch {
        */
       void onDetect(void (*handler)(uint8_t, GDTpoint_t*));
   private:
-      TwoWire&          _wire;
-      uint8_t           _intPin;
-      //mbed::InterruptIn _irqInt; 
-      PinName           _irqInt;
-      uint8_t           _rstPin;
-      uint8_t           _addr;
       GDTpoint_t        _points[GT911_MAX_CONTACTS];
       void              (*_gt911TouchHandler)(uint8_t, GDTpoint_t*);
 
-      uint8_t   _gt911WriteOp(uint16_t reg, uint8_t data);
-      uint8_t   _gt911WriteBytesOp(uint16_t reg, uint8_t * data, uint8_t len);
-      uint8_t   _gt911ReadOp(uint16_t reg, uint8_t * data, uint8_t len);
-      void      _gt911onIrq();
-      uint8_t   _gt911ReadInputCoord(uint8_t * pointsbuf, uint8_t& contacts);
 };
 
 #endif /* __ARDUINO_GIGADISPLAYTOUCH_H */

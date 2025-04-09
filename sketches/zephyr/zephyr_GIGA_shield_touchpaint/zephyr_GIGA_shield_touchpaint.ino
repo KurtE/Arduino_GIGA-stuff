@@ -16,11 +16,11 @@
 //REDIRECT_STDOUT_TO(Serial)
 #include "Arduino_GigaDisplay_GFX.h"
 #include "GigaDisplayRGB.h"
-//#include "Arduino_GigaDisplayTouch.h"
+#include "Arduino_GigaDisplayTouch.h"
 #include "Arduino_GigaDisplay.h"
 
 GigaDisplay_GFX display;
-// /Arduino_GigaDisplayTouch touchDetector;
+Arduino_GigaDisplayTouch touchDetector;
 
 GigaDisplayRGB rgb;  //create rgb object
 
@@ -65,7 +65,7 @@ void setup(void) {
   display.fillScreen(GC9A01A_BLACK);
   delay(500);
 
-#if 0
+#if 1
   if (touchDetector.begin()) {
     Serial.print("Touch controller init - OK");
   } else {
