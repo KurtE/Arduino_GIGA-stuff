@@ -122,6 +122,10 @@ int Display::write8(const uint16_t x,
             const uint16_t y,
             const void *buf) {
               
+
+//  printk("Display::write8(%u %u %p) %p %x\n", x, y, buf, 
+//      &((struct display_driver_api *)gdev->api)->write, *((uint32_t*)(&((struct display_driver_api *)gdev->api)->write)));
+
   return display_write(this->gdev, x, y, this->buf_desc, buf);
   
 }

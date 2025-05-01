@@ -25,14 +25,24 @@ void GigaDisplay_GFX::refresh_if_needed() {
   }
 }
 */
+#ifdef CONFIG_SHARED_MULTI_HEAP
+#include <zephyr/kernel.h>
+#include <zephyr/devicetree.h>
+#include <zephyr/multi_heap/shared_multi_heap.h>
+#endif
+
 void GigaDisplay_GFX::begin() {
     display = new Display();
     display->begin();
-
+#ifdef CONFIG_SHARED_MULTI_HEAP
+    buffer = (uint16_t*)shared_multi_heap_aligned_alloc(SMH_REG_ATTR_EXTERNAL, 16, (this->width() * this-> height() * sizeof(uint16_t)));
+#else
     SDRAM.begin();
     buffer = (uint16_t*)SDRAM.malloc(this->width() * this-> height() * sizeof(uint16_t));
+#endif    
     sizeof_framebuffer = this->width() * this-> height();
     this->display->setFrameDesc(this->width(), this-> height(), this-> height(), sizeof_framebuffer);
+    Serial.print("Buffer: 0x"); Serial.println((uint32_t)buffer, HEX);
     
     //_refresh_thd = new rtos::Thread(osPriorityHigh);
     //_refresh_thd->start(mbed::callback(this, &GigaDisplay_GFX::refresh_if_needed));
@@ -140,6 +150,25 @@ void GigaDisplay_GFX::fillScreen(uint16_t color) {
 
 	//MemoryHexDump(Serial, buffer, sizeof(buffer), true, "\n*** Buffer dups removed ***\n");
 }
+
+void GigaDisplay_GFX::fillRect(int16_t x, int16_t y, int16_t w, int16_t h, uint16_t color) {
+  if (hasBuffer()) {
+    startWrite();	// PR #3
+      uint16_t *pb_row = &buffer[x * WIDTH + y];
+      while (h--) {
+        uint16_t *pb = pb_row;
+        int16_t cw = w;
+        while (cw--) {
+          *pb++ = color;
+        }
+        pb_row += WIDTH;
+    }
+      endWrite();		// PR #3
+
+    //MemoryHexDump(Serial, buffer, sizeof(buffer), true, "\n*** Buffer dups removed ***\n");
+  }
+}
+
 
 void GigaDisplay_GFX::byteSwap(void) {
   if (hasBuffer()) {

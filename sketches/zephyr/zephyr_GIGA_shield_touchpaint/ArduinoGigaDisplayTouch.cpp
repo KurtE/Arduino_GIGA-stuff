@@ -78,7 +78,7 @@ Arduino_GigaDisplayTouch::~Arduino_GigaDisplayTouch()
 { }
 
 bool Arduino_GigaDisplayTouch::begin() {
-
+    printk("Touch::begin dev:%p %s\n", touch_dev, touch_dev->name);
 	if (!device_is_ready(touch_dev)) {
 		Serial.print("Touch Device ");
         Serial.print(touch_dev->name);

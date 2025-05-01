@@ -14,6 +14,8 @@ class GigaDisplay_GFX : public Adafruit_GFX {
     void begin();
     void drawPixel(int16_t x, int16_t y, uint16_t color);
     void fillScreen(uint16_t color);
+    void fillRect(int16_t x, int16_t y, int16_t w, int16_t h, uint16_t color);
+
     void byteSwap(void);
     void drawFastVLine(int16_t x, int16_t y, int16_t h, uint16_t color);
     void drawFastHLine(int16_t x, int16_t y, int16_t w, uint16_t color);

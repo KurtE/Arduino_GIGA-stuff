@@ -33,6 +33,7 @@ GigaDisplayRGB rgb;  //create rgb object
 #define GC9A01A_BLACK 0x0000
 #define GC9A01A_YELLOW 0xFFE0
 // The buffer used to rotate and resize the frame
+extern void wait_for_input();
 
 
 // Size of the color selection boxes and the paintbrush size
@@ -65,11 +66,25 @@ void setup(void) {
   display.fillScreen(GC9A01A_BLACK);
   delay(500);
 
+// lets try hack to fill buffer ourself
+  uint16_t *buffer = display.getBuffer();
+
+  uint32_t count_pixels = display.width() * display.height();
+  uint32_t i;
+  display.startWrite();
+  for (i = 0; i < count_pixels / 4; i++) *buffer++ = GC9A01A_RED;
+  for (i = 0; i < count_pixels / 4; i++) *buffer++ = GC9A01A_GREEN;
+  for (i = 0; i < count_pixels / 4; i++) *buffer++ = GC9A01A_BLUE;
+  for (i = 0; i < count_pixels / 4; i++) *buffer++ = GC9A01A_YELLOW;
+  display.endWrite();
+
+  wait_for_input();
+
 #if 1
   if (touchDetector.begin()) {
-    Serial.print("Touch controller init - OK");
+    Serial.println("Touch controller init - OK");
   } else {
-    Serial.print("Touch controller init - FAILED");
+    Serial.println("Touch controller init - FAILED");
     while (1) {
       rgb.on(255, 0, 0);
       delay(1000);
@@ -81,8 +96,26 @@ void setup(void) {
 
   display.fillScreen(GC9A01A_BLACK);
 
+
+
   // make the color selection boxes
+//  display.startBuffering();
+  display.fillRect(0, 0, BOXSIZE, BOXSIZE, GC9A01A_RED);
+  delay(500);
+  display.fillRect(BOXSIZE, 0, BOXSIZE, BOXSIZE, GC9A01A_YELLOW);
+  delay(500);
+  display.fillRect(BOXSIZE * 2, 0, BOXSIZE, BOXSIZE, GC9A01A_GREEN);
+  delay(500);
+  display.fillRect(BOXSIZE * 3, 0, BOXSIZE, BOXSIZE, GC9A01A_CYAN);
+  delay(500);
+  display.fillRect(BOXSIZE * 4, 0, BOXSIZE, BOXSIZE, GC9A01A_BLUE);
+  delay(500);
+  display.fillRect(BOXSIZE * 5, 0, BOXSIZE, BOXSIZE, GC9A01A_MAGENTA);
+  delay(500);
+  wait_for_input();
+
   display.startBuffering();
+  display.fillScreen(GC9A01A_BLACK);
   display.fillRect(0, 0, BOXSIZE, BOXSIZE, GC9A01A_RED);
   display.fillRect(BOXSIZE, 0, BOXSIZE, BOXSIZE, GC9A01A_YELLOW);
   display.fillRect(BOXSIZE * 2, 0, BOXSIZE, BOXSIZE, GC9A01A_GREEN);
@@ -91,7 +124,7 @@ void setup(void) {
   display.fillRect(BOXSIZE * 5, 0, BOXSIZE, BOXSIZE, GC9A01A_MAGENTA);
   display.endBuffering();
   // select the current color 'red'
-  display.drawRect(0, 0, BOXSIZE, BOXSIZE, GC9A01A_WHITE);
+  //display.drawRect(0, 0, BOXSIZE, BOXSIZE, GC9A01A_WHITE);
   currentcolor = GC9A01A_RED;
 }
 
@@ -170,4 +203,11 @@ void loop() {
     display.fillCircle(touch_x, touch_y, PENRADIUS, currentcolor);
   }
 #endif  
+}
+
+void wait_for_input() {
+  Serial.println("*** Press any key to continue ***");
+  while (Serial.read() != -1) {}
+  while (Serial.read() == -1) {}
+  while (Serial.read() != -1) {}
 }

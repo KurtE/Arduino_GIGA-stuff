@@ -28,9 +28,12 @@ void GigaDisplay_GFX::refresh_if_needed() {
 void GigaDisplay_GFX::begin() {
     display = new Display();
     display->begin();
-
+#ifdef CONFIG_SHARED_MULTI_HEAP
+    buffer = (uint16_t*)shared_multi_heap_aligned_alloc(SMH_REG_ATTR_EXTERNAL, 16, (this->width() * this-> height() * sizeof(uint16_t)));
+#else
     SDRAM.begin();
     buffer = (uint16_t*)SDRAM.malloc(this->width() * this-> height() * sizeof(uint16_t));
+#endif    
     sizeof_framebuffer = this->width() * this-> height();
     this->display->setFrameDesc(this->width(), this-> height(), this-> height(), sizeof_framebuffer);
     
