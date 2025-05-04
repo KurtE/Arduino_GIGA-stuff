@@ -9,7 +9,7 @@
 #include <Arduino.h>
 #include <Wire.h>
 
-#define WIRE_INTERFACES_COUNT 3
+#define WIRE_INTERFACES_COUNT 2
 void printKnownChips(byte address);
 void scan(TwoWire &myport);
 
