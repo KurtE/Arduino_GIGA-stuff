@@ -59,6 +59,7 @@ struct GDTpoint_s {
   uint8_t reserved;
 };
 
+
 /* Class ----------------------------------------------------------------------*/
 
 /**
@@ -96,8 +97,6 @@ class Arduino_GigaDisplayTouch {
        */
       void onDetect(void (*handler)(uint8_t, GDTpoint_t*));
   private:
-      GDTpoint_t        _points[GT911_MAX_CONTACTS];
-      void              (*_gt911TouchHandler)(uint8_t, GDTpoint_t*);
 
 };
 

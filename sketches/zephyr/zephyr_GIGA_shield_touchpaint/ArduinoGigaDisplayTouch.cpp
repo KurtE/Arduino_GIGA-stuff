@@ -31,43 +31,17 @@
 #include <zephyr/drivers/display.h>
 #include <zephyr/sys/util.h>
 
-//LOG_MODULE_REGISTER(sample, LOG_LEVEL_INF);
 
-#if !DT_NODE_EXISTS(DT_CHOSEN(zephyr_touch))
-#error "Unsupported board: zephyr,touch is not assigned"
-#endif
-
-static const struct device *const touch_dev = DEVICE_DT_GET(DT_CHOSEN(zephyr_touch));
-
-
-static struct {
+// experiment to try to capture touch screen events
+extern "C" {
+typedef struct {
 	size_t x;
 	size_t y;
 	bool pressed;
-} touch_point, touch_point_drawn;
+} touch_point_t;
 
-static void touch_event_callback(struct input_event *evt, void *user_data)
-{
-    printk("touch_event_callback(%p %p): %p %u %u %u %d\n", evt, user_data,
-            evt->dev, evt->sync, evt->type, evt->code, evt->value);
-#if 0
-	if (evt->code == INPUT_ABS_X) {
-		touch_point.x = evt->value;
-	}
-	if (evt->code == INPUT_ABS_Y) {
-		touch_point.y = evt->value;
-	}
-	if (evt->code == INPUT_BTN_TOUCH) {
-		touch_point.pressed = evt->value;
-	}
-	if (evt->sync) {
-		k_sem_give(&sync);
-	}
-#endif
+extern bool getVideoTouchEvent(touch_point_t *tp, k_timeout_t timeout);
 }
-
-INPUT_CALLBACK_DEFINE(touch_dev, touch_event_callback, NULL);
-
 
 
 /* Functions -----------------------------------------------------------------*/
@@ -77,14 +51,7 @@ Arduino_GigaDisplayTouch::Arduino_GigaDisplayTouch()
 Arduino_GigaDisplayTouch::~Arduino_GigaDisplayTouch() 
 { }
 
-bool Arduino_GigaDisplayTouch::begin() {
-    printk("Touch::begin dev:%p %s\n", touch_dev, touch_dev->name);
-	if (!device_is_ready(touch_dev)) {
-		Serial.print("Touch Device ");
-        Serial.print(touch_dev->name);
-        Serial.println(" not found. Aborting.");
-		return false;
-	}
+bool Arduino_GigaDisplayTouch::begin() {    
     return true;
 }
 
@@ -93,7 +60,14 @@ void Arduino_GigaDisplayTouch::end()
 { }
 
 uint8_t Arduino_GigaDisplayTouch::getTouchPoints(GDTpoint_t* points) {
-#if 0
+    touch_point_t tp;
+    if (!getVideoTouchEvent(&tp, K_NO_WAIT) || !tp.pressed) return 0;
+    points[0].x = tp.x;
+    points[0].y = tp.y;
+    return 1;
+}
+
+#if 0  // from other code.
     uint8_t rawpoints[GT911_MAX_CONTACTS * GT911_CONTACT_SIZE];
     uint8_t contacts;
     uint8_t error;
@@ -114,17 +88,9 @@ uint8_t Arduino_GigaDisplayTouch::getTouchPoints(GDTpoint_t* points) {
  
     _gt911WriteOp(GT911_REG_GESTURE_START_POINT, 0); /* Reset buffer status to finish the reading */
     return contacts;
-#else
-    return 0;
 #endif
-}
 
 void Arduino_GigaDisplayTouch::onDetect(void (*handler)(uint8_t, GDTpoint_t*)) {
-#if 0
-    _gt911TouchHandler = handler;
-    t.start(callback(&queue, &events::EventQueue::dispatch_forever));
-    _irqInt.rise(queue.event(mbed::callback(this, &Arduino_GigaDisplayTouch::_gt911onIrq)));
-#endif    
 }
 
 

@@ -50,22 +50,23 @@ void setup(void) {
   rgb.begin();  //init the library
 
   display.begin();
-  rgb.on(255, 0, 0);
+  rgb.on(128, 0, 0);
   display.fillScreen(GC9A01A_RED);
   delay(500);
-  rgb.on(0, 255, 0);  //turn on blue pixel
+  rgb.on(0, 128, 0);  //turn on blue pixel
   display.fillScreen(GC9A01A_GREEN);
   delay(500);
-  rgb.on(0, 0, 255);  //turn on blue pixel
+  rgb.on(0, 0, 128);  //turn on blue pixel
   display.fillScreen(GC9A01A_BLUE);
   delay(500);
-  rgb.on(255, 255, 255);
+  rgb.on(128, 128, 128);
   display.fillScreen(GC9A01A_WHITE);
   delay(500);
   rgb.off();  //turn off all pixels
   display.fillScreen(GC9A01A_BLACK);
   delay(500);
 
+#if 0
 // lets try hack to fill buffer ourself
   uint16_t *buffer = display.getBuffer();
 
@@ -79,6 +80,7 @@ void setup(void) {
   display.endWrite();
 
   wait_for_input();
+#endif
 
 #if 1
   if (touchDetector.begin()) {
@@ -86,7 +88,7 @@ void setup(void) {
   } else {
     Serial.println("Touch controller init - FAILED");
     while (1) {
-      rgb.on(255, 0, 0);
+      rgb.on(128, 0, 0);
       delay(1000);
       rgb.off();
       delay(1000);
@@ -95,24 +97,6 @@ void setup(void) {
 #endif
 
   display.fillScreen(GC9A01A_BLACK);
-
-
-
-  // make the color selection boxes
-//  display.startBuffering();
-  display.fillRect(0, 0, BOXSIZE, BOXSIZE, GC9A01A_RED);
-  delay(500);
-  display.fillRect(BOXSIZE, 0, BOXSIZE, BOXSIZE, GC9A01A_YELLOW);
-  delay(500);
-  display.fillRect(BOXSIZE * 2, 0, BOXSIZE, BOXSIZE, GC9A01A_GREEN);
-  delay(500);
-  display.fillRect(BOXSIZE * 3, 0, BOXSIZE, BOXSIZE, GC9A01A_CYAN);
-  delay(500);
-  display.fillRect(BOXSIZE * 4, 0, BOXSIZE, BOXSIZE, GC9A01A_BLUE);
-  delay(500);
-  display.fillRect(BOXSIZE * 5, 0, BOXSIZE, BOXSIZE, GC9A01A_MAGENTA);
-  delay(500);
-  wait_for_input();
 
   display.startBuffering();
   display.fillScreen(GC9A01A_BLACK);
@@ -130,7 +114,6 @@ void setup(void) {
 
 
 void loop() {
-#if 0
   uint8_t contacts;
   GDTpoint_t points[5];
   contacts = touchDetector.getTouchPoints(points);
@@ -145,12 +128,10 @@ void loop() {
   int touch_x = points[0].x;
   int touch_y = points[0].y;
 
-  /*
-  Serial.print("X = "); Serial.print(touch_x);
-  Serial.print("\tY = "); Serial.print(touch_y);
-  Serial.print("\tPressure = "); Serial.println(p.z);  
- */
-
+//  Serial.print("X = "); Serial.print(touch_x);
+//  Serial.print("\tY = "); Serial.println(touch_y);
+  printk("X = %d Y= %d\n", touch_x, touch_y);
+ 
   // Scale from ~0->4000 to display.width using the calibration #'s
   //  touch_x = map(touch_x, TS_MINX, TS_MAXX, 0, display.width());
   //  touch_y = map(touch_y, TS_MINY, TS_MAXY, 0, display.height());
@@ -161,6 +142,7 @@ void loop() {
   Serial.println(")");
   */
 
+  #if 1
   if (touch_y < BOXSIZE) {
     oldcolor = currentcolor;
 
