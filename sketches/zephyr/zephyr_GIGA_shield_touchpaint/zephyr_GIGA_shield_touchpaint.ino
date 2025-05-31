@@ -42,7 +42,7 @@ extern void wait_for_input();
 int oldcolor, currentcolor;
 
 void setup(void) {
-  // while (!Serial);     // used for leonardo debugging
+  while (!Serial && millis() < 5000);     // used for leonardo debugging
 
   Serial.begin(9600);
   Serial.println(F("Touch Paint!"));
@@ -116,10 +116,11 @@ void setup(void) {
 void loop() {
   uint8_t contacts;
   GDTpoint_t points[5];
-  contacts = touchDetector.getTouchPoints(points);
+  contacts = touchDetector.getTouchPoints(points, 50);
 
   if (contacts == 0) {
     rgb.off();
+    delay(1);
     return;
   }
   rgb.on(0, 32, 0);
@@ -128,9 +129,9 @@ void loop() {
   int touch_x = points[0].x;
   int touch_y = points[0].y;
 
-//  Serial.print("X = "); Serial.print(touch_x);
-//  Serial.print("\tY = "); Serial.println(touch_y);
-  printk("X = %d Y= %d\n", touch_x, touch_y);
+  Serial.print("X = "); Serial.print(touch_x);
+  Serial.print("\tY = "); Serial.println(touch_y);
+  //printk("X = %d Y= %d\n", touch_x, touch_y);
  
   // Scale from ~0->4000 to display.width using the calibration #'s
   //  touch_x = map(touch_x, TS_MINX, TS_MAXX, 0, display.width());
@@ -184,7 +185,8 @@ void loop() {
   if (((touch_y - PENRADIUS) > BOXSIZE) && ((touch_y + PENRADIUS) < display.height())) {
     display.fillCircle(touch_x, touch_y, PENRADIUS, currentcolor);
   }
-#endif  
+#endif
+  delay(1);  
 }
 
 void wait_for_input() {

@@ -73,7 +73,13 @@ public:
     Display();
 
     /**
-    * @brief Initialize the display
+    * @brief Initialize the camera.
+    * 
+    * @param width Frame width in pixels.
+    * @param height Frame height in pixels.
+    * @param pixformat Initial pixel format (default: CAMERA_RGB565).
+    * @param rotation Intitial rotation of display
+    * @return true if the camera is successfully initialized, otherwise false.
     */
     bool begin(DisplayPixelFormat pixformat = DISPLAY_RGB565, int rotation = 0);
     
@@ -117,8 +123,5 @@ public:
 
    
 };
-
-
-
 
 #endif // __GIGA_DISPLAY_H__

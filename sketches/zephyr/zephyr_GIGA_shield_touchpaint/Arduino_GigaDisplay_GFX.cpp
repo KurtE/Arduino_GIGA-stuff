@@ -40,10 +40,14 @@ void GigaDisplay_GFX::begin() {
     SDRAM.begin();
     buffer = (uint16_t*)SDRAM.malloc(this->width() * this-> height() * sizeof(uint16_t));
 #endif    
-    sizeof_framebuffer = this->width() * this-> height();
-    this->display->setFrameDesc(this->width(), this-> height(), this-> height(), sizeof_framebuffer);
+    sizeof_framebuffer = this->width() * this-> height() * sizeof(uint16_t);
+    this->display->setFrameDesc(this->width(), this-> height(), this-> width(), sizeof_framebuffer);
     Serial.print("Buffer: 0x"); Serial.println((uint32_t)buffer, HEX);
     
+    // turn on the display backlight
+    pinMode(74, OUTPUT);
+    digitalWrite(74, HIGH);
+
     //_refresh_thd = new rtos::Thread(osPriorityHigh);
     //_refresh_thd->start(mbed::callback(this, &GigaDisplay_GFX::refresh_if_needed));
     //buffer = (uint16_t*)dsi_getActiveFrameBuffer();
