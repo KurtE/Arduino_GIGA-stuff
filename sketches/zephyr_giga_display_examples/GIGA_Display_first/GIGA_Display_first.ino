@@ -9,6 +9,37 @@ uint16_t color_table[] = {
 };
 uint8_t color_index = 0;
 
+// Lets try adding a thread that blinks pins...
+#define STACKSIZE 1024
+#define PRIORITY 7
+#define SLEEPTIME 10
+#define LED_BLINK_COUNT 32
+#define BLINK_PIN 2
+
+K_THREAD_STACK_DEFINE(blink_pins_thread_stack, STACKSIZE);
+static struct k_thread blink_pins_thread_data;
+
+void blink_pins_thread(void *dummy1, void *dummy2, void *dummy3)
+{
+	ARG_UNUSED(dummy1);
+	ARG_UNUSED(dummy2);
+	ARG_UNUSED(dummy3);
+
+	Serial.print("thread_a: thread started \n");
+
+	while (1)
+	{
+    static uint8_t pin_state = 0;
+    static uint8_t loop_count = 0;
+    pin_state ^=1;
+    digitalWrite(BLINK_PIN, pin_state);
+    loop_count++;
+    if ((loop_count & (LED_BLINK_COUNT - 1)) == 0) digitalWrite(LED_BUILTIN, (loop_count  & LED_BLINK_COUNT)? HIGH : LOW);
+  	k_msleep(SLEEPTIME);
+  }
+}
+
+
 
 void fillScreen(uint16_t color) {
   uint32_t sizeof_framebuffer2 = 2 * 160 * 160;
@@ -50,6 +81,18 @@ void setup() {
   };
 
   Serial.println("Display configured!!");
+  pinMode(BLINK_PIN, OUTPUT);
+  pinMode(LED_BUILTIN, OUTPUT);
+
+  // Start a thread:
+    k_thread_create(&blink_pins_thread_data, blink_pins_thread_stack,
+      K_THREAD_STACK_SIZEOF(blink_pins_thread_stack),
+      blink_pins_thread, NULL, NULL, NULL,
+      PRIORITY, 0, K_FOREVER);
+  k_thread_name_set(&blink_pins_thread_data, "blink pins");
+
+	k_thread_start(&blink_pins_thread_data);
+
 
 
   void* FB =  display.getFrameBuffer();
@@ -94,4 +137,5 @@ void setup() {
 
 void loop() {
   // put your main code here, to run repeatedly:
+  delay(500);
 }

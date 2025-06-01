@@ -111,7 +111,7 @@ void setup(void) {
   //display.drawRect(0, 0, BOXSIZE, BOXSIZE, GC9A01A_WHITE);
   currentcolor = GC9A01A_RED;
   Serial.print("GFX Rotation: ");
-  Serial.print(display.getRotation());
+  Serial.println(display.getRotation());
 }
 
 

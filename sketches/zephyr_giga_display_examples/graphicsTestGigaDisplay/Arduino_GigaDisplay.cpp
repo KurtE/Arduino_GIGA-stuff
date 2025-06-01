@@ -122,15 +122,19 @@ int Display::write8(const uint16_t x,
             const uint16_t y,
             const void *buf) {
               
+
+//  printk("Display::write8(%u %u %p) %p %x\n", x, y, buf, 
+//      &((struct display_driver_api *)gdev->api)->write, *((uint32_t*)(&((struct display_driver_api *)gdev->api)->write)));
+
   return display_write(this->gdev, x, y, this->buf_desc, buf);
   
 }
 
 void Display::setFrameDesc(uint16_t w, uint16_t h, uint16_t pitch, uint32_t buf_size) {
 	this->buf_desc->buf_size = buf_size;
-	this->buf_desc->pitch = w;  /** Number of pixels between consecutive rows in the data buffer */
-	this->buf_desc->width = h;  /** Data buffer row width in pixels */
-	this->buf_desc->height = pitch;	/** Data buffer row height in pixels */
+	this->buf_desc->width = w;  /** Number of pixels between consecutive rows in the data buffer */
+	this->buf_desc->height = h;  /** Data buffer row width in pixels */
+	this->buf_desc->pitch = pitch;	/** Data buffer row height in pixels */
     
 }
 
