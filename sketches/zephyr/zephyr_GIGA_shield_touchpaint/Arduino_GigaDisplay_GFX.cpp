@@ -158,7 +158,7 @@ void GigaDisplay_GFX::fillScreen(uint16_t color) {
 void GigaDisplay_GFX::fillRect(int16_t x, int16_t y, int16_t w, int16_t h, uint16_t color) {
   if (hasBuffer()) {
     startWrite();	// PR #3
-      uint16_t *pb_row = &buffer[x * WIDTH + y];
+      uint16_t *pb_row = &buffer[y * WIDTH + x];
       while (h--) {
         uint16_t *pb = pb_row;
         int16_t cw = w;

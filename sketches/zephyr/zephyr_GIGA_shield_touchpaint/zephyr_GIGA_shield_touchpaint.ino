@@ -110,6 +110,8 @@ void setup(void) {
   // select the current color 'red'
   //display.drawRect(0, 0, BOXSIZE, BOXSIZE, GC9A01A_WHITE);
   currentcolor = GC9A01A_RED;
+  Serial.print("GFX Rotation: ");
+  Serial.print(display.getRotation());
 }
 
 
@@ -131,17 +133,16 @@ void loop() {
 
   Serial.print("X = "); Serial.print(touch_x);
   Serial.print("\tY = "); Serial.println(touch_y);
-  //printk("X = %d Y= %d\n", touch_x, touch_y);
- 
-  // Scale from ~0->4000 to display.width using the calibration #'s
-  //  touch_x = map(touch_x, TS_MINX, TS_MAXX, 0, display.width());
-  //  touch_y = map(touch_y, TS_MINY, TS_MAXY, 0, display.height());
+  
+  // Lets map the the point to the screen rotation.
+  switch (display.getRotation()) {
+    case 0:
+      touch_y = points[0].x;
+      touch_x = display.width() - points[0].y;
+      break;
 
-  /*
-  Serial.print("("); Serial.print(touch_x);
-  Serial.print(", "); Serial.print(touch_y);
-  Serial.println(")");
-  */
+  }
+
 
   #if 1
   if (touch_y < BOXSIZE) {
