@@ -40,7 +40,9 @@ extern void wait_for_input();
 #define BOXSIZE 80
 #define PENRADIUS 5
 int oldcolor, currentcolor;
-
+static const uint16_t paint_colors[] = {GC9A01A_RED, GC9A01A_YELLOW, GC9A01A_GREEN, GC9A01A_CYAN, GC9A01A_BLUE, GC9A01A_MAGENTA};
+#define COUNT_PAINT_COLORS  (sizeof(paint_colors) / sizeof(paint_colors[0]))
+uint8_t current_color_index = 0;
 void setup(void) {
   while (!Serial && millis() < 5000);     // used for leonardo debugging
 
@@ -66,23 +68,6 @@ void setup(void) {
   display.fillScreen(GC9A01A_BLACK);
   delay(500);
 
-#if 0
-// lets try hack to fill buffer ourself
-  uint16_t *buffer = display.getBuffer();
-
-  uint32_t count_pixels = display.width() * display.height();
-  uint32_t i;
-  display.startWrite();
-  for (i = 0; i < count_pixels / 4; i++) *buffer++ = GC9A01A_RED;
-  for (i = 0; i < count_pixels / 4; i++) *buffer++ = GC9A01A_GREEN;
-  for (i = 0; i < count_pixels / 4; i++) *buffer++ = GC9A01A_BLUE;
-  for (i = 0; i < count_pixels / 4; i++) *buffer++ = GC9A01A_YELLOW;
-  display.endWrite();
-
-  wait_for_input();
-#endif
-
-#if 1
   if (touchDetector.begin()) {
     Serial.println("Touch controller init - OK");
   } else {
@@ -94,18 +79,14 @@ void setup(void) {
       delay(1000);
     }
   }
-#endif
 
   display.fillScreen(GC9A01A_BLACK);
 
   display.startBuffering();
   display.fillScreen(GC9A01A_BLACK);
-  display.fillRect(0, 0, BOXSIZE, BOXSIZE, GC9A01A_RED);
-  display.fillRect(BOXSIZE, 0, BOXSIZE, BOXSIZE, GC9A01A_YELLOW);
-  display.fillRect(BOXSIZE * 2, 0, BOXSIZE, BOXSIZE, GC9A01A_GREEN);
-  display.fillRect(BOXSIZE * 3, 0, BOXSIZE, BOXSIZE, GC9A01A_CYAN);
-  display.fillRect(BOXSIZE * 4, 0, BOXSIZE, BOXSIZE, GC9A01A_BLUE);
-  display.fillRect(BOXSIZE * 5, 0, BOXSIZE, BOXSIZE, GC9A01A_MAGENTA);
+  for (uint8_t i = 0; i < COUNT_PAINT_COLORS; i++) {
+    display.fillRect(BOXSIZE*i, 0, BOXSIZE, BOXSIZE, paint_colors[i]);
+  }
   display.endBuffering();
   // select the current color 'red'
   //display.drawRect(0, 0, BOXSIZE, BOXSIZE, GC9A01A_WHITE);
@@ -114,9 +95,19 @@ void setup(void) {
   Serial.println(display.getRotation());
 }
 
+void convertRawTouchyByRotation(int xRaw, int yRaw, int &touch_x, int &touch_y) {
+  switch (display.getRotation()) {
+    case 0:
+      touch_y = xRaw;
+      touch_x = display.width() - yRaw;
+      break;
+  }
+}
+
 
 void loop() {
   uint8_t contacts;
+  int touch_x, touch_y;
   GDTpoint_t points[5];
   contacts = touchDetector.getTouchPoints(points, 50);
 
@@ -128,65 +119,35 @@ void loop() {
   rgb.on(0, 32, 0);
 
   // Retrieve a point
-  int touch_x = points[0].x;
-  int touch_y = points[0].y;
-
-  Serial.print("X = "); Serial.print(touch_x);
-  Serial.print("\tY = "); Serial.println(touch_y);
+  Serial.print("X = "); Serial.print(points[0].x);
+  Serial.print("\tY = "); Serial.println(points[0].y);
   
   // Lets map the the point to the screen rotation.
-  switch (display.getRotation()) {
-    case 0:
-      touch_y = points[0].x;
-      touch_x = display.width() - points[0].y;
-      break;
+  convertRawTouchyByRotation(points[0].x, points[0].y, touch_x, touch_y);
 
-  }
-
-
-  #if 1
   if (touch_y < BOXSIZE) {
-    oldcolor = currentcolor;
-
-    if (touch_x < BOXSIZE) {
-      currentcolor = GC9A01A_RED;
-      display.drawRect(0, 0, BOXSIZE, BOXSIZE, GC9A01A_WHITE);
-    } else if (touch_x < BOXSIZE * 2) {
-      currentcolor = GC9A01A_YELLOW;
-      display.drawRect(BOXSIZE, 0, BOXSIZE, BOXSIZE, GC9A01A_WHITE);
-    } else if (touch_x < BOXSIZE * 3) {
-      currentcolor = GC9A01A_GREEN;
-      display.drawRect(BOXSIZE * 2, 0, BOXSIZE, BOXSIZE, GC9A01A_WHITE);
-    } else if (touch_x < BOXSIZE * 4) {
-      currentcolor = GC9A01A_CYAN;
-      display.drawRect(BOXSIZE * 3, 0, BOXSIZE, BOXSIZE, GC9A01A_WHITE);
-    } else if (touch_x < BOXSIZE * 5) {
-      currentcolor = GC9A01A_BLUE;
-      display.drawRect(BOXSIZE * 4, 0, BOXSIZE, BOXSIZE, GC9A01A_WHITE);
-    } else if (touch_x < BOXSIZE * 6) {
-      currentcolor = GC9A01A_MAGENTA;
-      display.drawRect(BOXSIZE * 5, 0, BOXSIZE, BOXSIZE, GC9A01A_WHITE);
-    }
-
-    if (oldcolor != currentcolor) {
-      if (oldcolor == GC9A01A_RED)
-        display.fillRect(0, 0, BOXSIZE, BOXSIZE, GC9A01A_RED);
-      if (oldcolor == GC9A01A_YELLOW)
-        display.fillRect(BOXSIZE, 0, BOXSIZE, BOXSIZE, GC9A01A_YELLOW);
-      if (oldcolor == GC9A01A_GREEN)
-        display.fillRect(BOXSIZE * 2, 0, BOXSIZE, BOXSIZE, GC9A01A_GREEN);
-      if (oldcolor == GC9A01A_CYAN)
-        display.fillRect(BOXSIZE * 3, 0, BOXSIZE, BOXSIZE, GC9A01A_CYAN);
-      if (oldcolor == GC9A01A_BLUE)
-        display.fillRect(BOXSIZE * 4, 0, BOXSIZE, BOXSIZE, GC9A01A_BLUE);
-      if (oldcolor == GC9A01A_MAGENTA)
-        display.fillRect(BOXSIZE * 5, 0, BOXSIZE, BOXSIZE, GC9A01A_MAGENTA);
+    uint8_t new_color_index = touch_x / BOXSIZE;
+    if ((new_color_index != current_color_index) && (new_color_index < COUNT_PAINT_COLORS)) {
+      // highlight the new touch color
+      display.drawRect(BOXSIZE * new_color_index, 0, BOXSIZE, BOXSIZE, GC9A01A_WHITE);
+      // unhighlight the previous one.
+      display.drawRect(BOXSIZE * current_color_index, 0, BOXSIZE, BOXSIZE, paint_colors[current_color_index]);
+      current_color_index = new_color_index;
     }
   }
+
   if (((touch_y - PENRADIUS) > BOXSIZE) && ((touch_y + PENRADIUS) < display.height())) {
-    display.fillCircle(touch_x, touch_y, PENRADIUS, currentcolor);
+    display.fillCircle(touch_x, touch_y, PENRADIUS, paint_colors[current_color_index]);
   }
-#endif
+  for (uint8_t i = 1; i < contacts; i++) {
+    convertRawTouchyByRotation(points[i].x, points[i].y, touch_x, touch_y);
+    if (((touch_y - PENRADIUS) > BOXSIZE) && ((touch_y + PENRADIUS) < display.height())) {
+      uint8_t color_index = current_color_index + i;
+      if (color_index >= COUNT_PAINT_COLORS) color_index -= COUNT_PAINT_COLORS;
+      display.fillCircle(touch_x, touch_y, PENRADIUS, paint_colors[color_index]);
+    };
+  }
+
   delay(1);  
 }
 
