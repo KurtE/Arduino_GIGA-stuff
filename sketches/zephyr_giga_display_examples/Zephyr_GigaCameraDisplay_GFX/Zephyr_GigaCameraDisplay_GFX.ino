@@ -16,6 +16,9 @@ uint16_t color565(uint8_t r, uint8_t g, uint8_t b) {
   return ((r & 0xF8) << 8) | ((g & 0xFC) << 3) | (b >> 3);
 }
 
+#define CAMERA_WIDTH 320
+#define CAMERA_HEIGHT 240
+#define SCALE 1
 
 #include <camera.h>
  
@@ -53,8 +56,7 @@ void fatal_error(const char *msg) {
   }
 }
 
-#define CAMERA_WIDTH 320
-#define CAMERA_HEIGHT 240
+
 
 void setup() {
   pinMode(LED_BUILTIN, OUTPUT);
@@ -65,7 +67,7 @@ void setup() {
   Serial.println("Before camera start");
   Serial.flush();
   //cam.debug(Serial);
-  if (!cam.begin(320, 240, CAMERA_RGB565)) {
+  if (!cam.begin(CAMERA_WIDTH, CAMERA_HEIGHT, CAMERA_RGB565)) {
     fatal_error("Camera begin failed");
   }
   //Serial.println("Before setRotation");
@@ -73,8 +75,14 @@ void setup() {
 
   display.begin();
   elapsedMicros em;
+  display.setRotation(1);
   display.fillScreen(GC9A01A_BLUE);
   Serial.println(em, DEC);
+  Serial.print("Camera Width: "); Serial.print(CAMERA_WIDTH);
+  Serial.print(" Height: "); Serial.println(CAMERA_HEIGHT);
+  Serial.print("Screen Width: "); Serial.print(display.width());
+  Serial.print(" Height: "); Serial.println(display.height());
+  Serial.print("Scale: "); Serial.println(SCALE);
   Serial.println("end setup");
   Serial.flush();
 }
@@ -92,7 +100,7 @@ void loop() {
 
   // Grab frame and write to another framebuffer
   if (cam.grabFrame(fb)) {
-    Serial.println("Camera frame received");
+    //Serial.println("Camera frame received");
     if (Serial.available()) {
       while (Serial.read() != -1) {}
 //      cam.printRegs();
@@ -105,7 +113,23 @@ void loop() {
     uint16_t *pixels = (uint16_t *)fb.getBuffer();
     elapsedMicros emDisplay;
     for (int i = 0; i < CAMERA_WIDTH*CAMERA_HEIGHT; i++) pixels[i] = HTONS(pixels[i]);
-    display.drawRGBBitmap(0, 0, pixels, CAMERA_WIDTH, CAMERA_HEIGHT);
+    #if defined(SCALE) && SCALE > 1
+    // Quick and dirty scale.
+    int yDisplay = (display.height() - (CAMERA_HEIGHT * SCALE)) / 2;
+    display.startBuffering();
+    for (int yCamera = 0; yCamera < CAMERA_HEIGHT; yCamera++) {
+      int xDisplay = (display.width() - (CAMERA_WIDTH * SCALE)) / 2;
+      for (int xCamera = 0; xCamera < CAMERA_WIDTH; xCamera++) {
+        display.fillRect(xDisplay, yDisplay, SCALE, SCALE, *pixels++);
+        xDisplay += SCALE;
+      }
+      yDisplay += SCALE;
+    }
+    display.endBuffering();
+    #else  
+    display.drawRGBBitmap((display.width() - CAMERA_WIDTH) / 2, (display.height() - CAMERA_HEIGHT) / 2, pixels, CAMERA_WIDTH, CAMERA_HEIGHT);
+    #endif
+
     cam.releaseFrame(fb);
 
     display_time_sum += emDisplay;
