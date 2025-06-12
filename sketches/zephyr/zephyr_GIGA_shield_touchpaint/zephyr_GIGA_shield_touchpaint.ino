@@ -22,6 +22,11 @@
 GigaDisplay_GFX display;
 Arduino_GigaDisplayTouch touchDetector;
 
+// Some of our displays appear to have a differnt orieintations of the touch sensor
+// versus the display.
+uint8_t g_touch_rotation = 0; 
+
+
 GigaDisplayRGB rgb;  //create rgb object
 
 #define GC9A01A_CYAN 0x07FF
@@ -32,9 +37,6 @@ GigaDisplayRGB rgb;  //create rgb object
 #define GC9A01A_WHITE 0xffff
 #define GC9A01A_BLACK 0x0000
 #define GC9A01A_YELLOW 0xFFE0
-// The buffer used to rotate and resize the frame
-extern void wait_for_input();
-
 
 // Size of the color selection boxes and the paintbrush size
 #define BOXSIZE 80
@@ -70,6 +72,9 @@ void setup(void) {
 
   if (touchDetector.begin()) {
     Serial.println("Touch controller init - OK");
+    Serial.print("Touch Orientation: ");
+    Serial.println(g_touch_rotation);
+    Serial.println("Can change by typing 0-3 in Serial monitor");
   } else {
     Serial.println("Touch controller init - FAILED");
     while (1) {
@@ -96,10 +101,15 @@ void setup(void) {
 }
 
 void convertRawTouchyByRotation(int xRaw, int yRaw, int &touch_x, int &touch_y) {
-  switch (display.getRotation()) {
+  switch (g_touch_rotation) {
     case 0:
       touch_y = xRaw;
       touch_x = display.width() - yRaw;
+      break;
+    case 1:
+      Serial.print("@");
+      touch_x = xRaw; //display.width() - xRaw;
+      touch_y = yRaw; // display.height() - yRaw;
       break;
   }
 }
@@ -114,6 +124,16 @@ void loop() {
   if (contacts == 0) {
     rgb.off();
     delay(1);
+    if (Serial.available()) {
+      int ch = Serial.read();
+      if ((ch >= '0') && (ch <= '3')) {
+        g_touch_rotation = ch - '0';
+        Serial.print("New touch rotation: ");
+        Serial.println(g_touch_rotation);
+        while (Serial.read() != -1) {}
+      }
+  }
+
     return;
   }
   rgb.on(0, 32, 0);
@@ -149,11 +169,4 @@ void loop() {
   }
 
   delay(1);  
-}
-
-void wait_for_input() {
-  Serial.println("*** Press any key to continue ***");
-  while (Serial.read() != -1) {}
-  while (Serial.read() == -1) {}
-  while (Serial.read() != -1) {}
 }
