@@ -129,8 +129,7 @@ typedef struct {
 #ifdef __cplusplus
 // At all other speeds, _pspi->beginTransaction() will use the fastest available
 // clock
-#define ST77XX_SPICLOCK 30000000
-#define ST77XX_SPICLOCK_READ 1000000
+#define ST77XX_SPICLOCK 16000000
 
 class ST77XX_zephyr_n : public Print {
 public:
@@ -159,8 +158,6 @@ public:
   // Begin - main method to initialze the display.
   void commandList(const uint8_t *addr);
   virtual void  begin(uint16_t width=240, uint16_t height=320, uint8_t mode=SPI_MODE0, uint32_t spi_clock = ST77XX_SPICLOCK);
-  //void begin(uint32_t spi_clock = ST77XX_SPICLOCK,
-  //           uint32_t spi_clock_read = ST77XX_SPICLOCK_READ);
 
   // common init stuff used by the different versions init or begin...
   void common_init(const uint8_t *cmd_list);
@@ -448,12 +445,11 @@ public:
   SPIClass *_pspi = nullptr;
   const struct device *_spi_dev = nullptr;
   struct spi_config _config16;
+  SPISettings _spiSettings;
 
   uint8_t _spi_num = 0;         // Which buss is this spi on?
   uint32_t _SPI_CLOCK = ST77XX_SPICLOCK;      // #define ST77XX_SPICLOCK 30000000
-  uint32_t _SPI_CLOCK_READ = ST77XX_SPICLOCK_READ; //#define ST77XX_SPICLOCK_READ 2000000
   uint8_t _SPI_MODE = SPI_MODE0;
-
   int16_t _width = ST77XX_TFTWIDTH;
   int16_t _height = ST77XX_TFTHEIGHT; // Display w/h as modified by current rotation
   int16_t _screenWidth = ST77XX_TFTWIDTH;
@@ -604,6 +600,14 @@ public:
     _pspi->beginTransaction(SPISettings(clock, MSBFIRST, _SPI_MODE));
 
   }
+
+  void beginSPITransaction() __attribute__((always_inline)) {
+      digitalWrite(_cs, LOW);
+    _pspi->beginTransaction(_spiSettings);
+
+  }
+
+
   void endSPITransaction() __attribute__((always_inline)) {
     _pspi->endTransaction();
     digitalWrite(_cs, HIGH);

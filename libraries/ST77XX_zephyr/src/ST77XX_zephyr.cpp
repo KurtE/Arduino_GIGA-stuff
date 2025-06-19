@@ -162,14 +162,14 @@ ST77XX_zephyr_n::ST77XX_zephyr_n(uint8_t cs_pin, uint8_t dc_pin, uint8_t rst_pin
 
 void ST77XX_zephyr_n::setAddrWindow(uint16_t x0, uint16_t y0, uint16_t x1,
                                 uint16_t y1) {
-  beginSPITransaction(_SPI_CLOCK);
+  beginSPITransaction();
   setAddr(x0, y0, x1, y1);
   writecommand_last(ST77XX_RAMWR); // write to RAM
   endSPITransaction();
 }
 
 void ST77XX_zephyr_n::pushColor(uint16_t color) {
-  beginSPITransaction(_SPI_CLOCK);
+  beginSPITransaction();
   writedata16_last(color);
   endSPITransaction();
 }
@@ -190,7 +190,7 @@ void ST77XX_zephyr_n::drawPixel(int16_t x, int16_t y, uint16_t color) {
   } else
 #endif
   {
-    beginSPITransaction(_SPI_CLOCK);
+    beginSPITransaction();
     setAddr(x, y, x, y);
     writecommand_cont(ST77XX_RAMWR);
     writedata16_last(color);
@@ -227,7 +227,7 @@ void ST77XX_zephyr_n::drawFastVLine(int16_t x, int16_t y, int16_t h,
   } else
 #endif
   {
-    beginSPITransaction(_SPI_CLOCK);
+    beginSPITransaction();
     setAddr(x, y, x, y + h - 1);
     writecommand_cont(ST77XX_RAMWR);
     setDataMode();
@@ -280,7 +280,7 @@ void ST77XX_zephyr_n::drawFastHLine(int16_t x, int16_t y, int16_t w,
   } else
 #endif
   {
-    beginSPITransaction(_SPI_CLOCK);
+    beginSPITransaction();
     setAddr(x, y, x + w - 1, y);
     writecommand_cont(ST77XX_RAMWR);
     setDataMode();
@@ -407,7 +407,7 @@ void ST77XX_zephyr_n::fillRect(int16_t x, int16_t y, int16_t w, int16_t h,
     // TODO: this can result in a very long transaction time
     // should break this into multiple transactions, even though
     // it'll cost more overhead, so we don't stall other SPI libs
-    beginSPITransaction(_SPI_CLOCK);
+    beginSPITransaction();
     setAddr(x, y, x + w - 1, y + h - 1);
     writecommand_cont(ST77XX_RAMWR);
     setDataMode();
@@ -515,7 +515,7 @@ void ST77XX_zephyr_n::fillRectVGradient(int16_t x, int16_t y, int16_t w, int16_t
   } else
 #endif
   {
-    beginSPITransaction(_SPI_CLOCK);
+    beginSPITransaction();
     setAddr(x, y, x + w - 1, y + h - 1);
     writecommand_cont(ST77XX_RAMWR);
     for (y = h; y > 0; y--) {
@@ -527,7 +527,7 @@ void ST77XX_zephyr_n::fillRectVGradient(int16_t x, int16_t y, int16_t w, int16_t
       writedata16_last(color);
       if (y > 1 && (y & 1)) {
         endSPITransaction();
-        beginSPITransaction(_SPI_CLOCK);
+        beginSPITransaction();
       }
       r += dr;
       g += dg;
@@ -590,7 +590,7 @@ void ST77XX_zephyr_n::fillRectHGradient(int16_t x, int16_t y, int16_t w, int16_t
   } else
 #endif
   {
-    beginSPITransaction(_SPI_CLOCK);
+    beginSPITransaction();
     setAddr(x, y, x + w - 1, y + h - 1);
     writecommand_cont(ST77XX_RAMWR);
     for (y = h; y > 0; y--) {
@@ -605,7 +605,7 @@ void ST77XX_zephyr_n::fillRectHGradient(int16_t x, int16_t y, int16_t w, int16_t
       writedata16_last(color);
       if (y > 1 && (y & 1)) {
         endSPITransaction();
-        beginSPITransaction(_SPI_CLOCK);
+        beginSPITransaction();
       }
       r = r1;
       g = g1;
@@ -635,7 +635,7 @@ void ST77XX_zephyr_n::fillScreenHGradient(uint16_t color1, uint16_t color2) {
 
 void ST77XX_zephyr_n::setRotation(uint8_t m) {
   _rotation = m % 4; // can't be higher than 3
-  beginSPITransaction(_SPI_CLOCK);
+  beginSPITransaction();
   writecommand_cont(ST77XX_MADCTL);
   switch (_rotation) {
   case 0:
@@ -685,7 +685,7 @@ void ST77XX_zephyr_n::setScrollMargins(uint16_t top, uint16_t bottom) {
   if (top + bottom > _height) return;
   uint16_t middle = _height - (top + bottom);
 
-  beginSPITransaction(_SPI_CLOCK);
+  beginSPITransaction();
   writecommand_cont(ST77XX_VSCRDEF);
   writedata16_cont(top);
   writedata16_cont(middle);
@@ -698,7 +698,7 @@ void ST77XX_zephyr_n::setScrollMargins(uint16_t top, uint16_t bottom) {
 void ST77XX_zephyr_n::setScroll(uint16_t offset) {
   UNUSED(offset);
 #ifdef LATER
-  beginSPITransaction(_SPI_CLOCK);
+  beginSPITransaction();
   writecommand_cont(ST77XX_VSCRSADD);
   writedata16_last(offset);
   endSPITransaction();
@@ -706,7 +706,7 @@ void ST77XX_zephyr_n::setScroll(uint16_t offset) {
 }
 
 void ST77XX_zephyr_n::invertDisplay(boolean i) {
-  beginSPITransaction(_SPI_CLOCK);
+  beginSPITransaction();
   writecommand_last(i ? ST77XX_INVON : ST77XX_INVOFF);
   endSPITransaction();
 }
@@ -908,7 +908,7 @@ void ST77XX_zephyr_n::writeRect(int16_t x, int16_t y, int16_t w, int16_t h,
   }
 #endif
 
-  beginSPITransaction(_SPI_CLOCK);
+  beginSPITransaction();
   setAddr(x, y, x + w - 1, y + h - 1);
   writecommand_cont(ST77XX_RAMWR);
   setDataMode();
@@ -1013,7 +1013,7 @@ void ST77XX_zephyr_n::writeSubImageRect(int16_t x, int16_t y, int16_t w, int16_t
   }
   #endif
 
-  beginSPITransaction(_SPI_CLOCK);
+  beginSPITransaction();
   setAddr(x, y, x+w-1, y+h-1);
   writecommand_cont(ST77XX_RAMWR);
   for(y=h; y>0; y--) {
@@ -1085,7 +1085,7 @@ void ST77XX_zephyr_n::writeSubImageRectBytesReversed(int16_t x, int16_t y, int16
   }
   #endif
 
-  beginSPITransaction(_SPI_CLOCK);
+  beginSPITransaction();
   setAddr(x, y, x+w-1, y+h-1);
   writecommand_cont(ST77XX_RAMWR);
   for(y=h; y>0; y--) {
@@ -1174,7 +1174,7 @@ void ST77XX_zephyr_n::writeRect8BPP(int16_t x, int16_t y, int16_t w, int16_t h,
   }
 #endif
 
-  beginSPITransaction(_SPI_CLOCK);
+  beginSPITransaction();
   setAddr(x, y, x + w - 1, y + h - 1);
   writecommand_cont(ST77XX_RAMWR);
   for (y = h; y > 0; y--) {
@@ -1318,7 +1318,7 @@ void ST77XX_zephyr_n::writeRectNBPP(int16_t x, int16_t y, int16_t w, int16_t h,
   }
 #endif
 
-  beginSPITransaction(_SPI_CLOCK);
+  beginSPITransaction();
   setAddr(x, y, x + w - 1, y + h - 1);
   writecommand_cont(ST77XX_RAMWR);
   for (; h > 0; h--) {
@@ -1365,7 +1365,7 @@ void ST77XX_zephyr_n::commandList(const uint8_t *addr)
 			//Serial.printf("delay %d\n", ms); Serial.flush();
 			endSPITransaction();
 			delay(ms);
-			beginSPITransaction(_SPI_CLOCK);
+			beginSPITransaction();
 		}
 	}
 	endSPITransaction();
@@ -1398,6 +1398,8 @@ void ST77XX_zephyr_n::common_init(const uint8_t *cmd_list) {
 
   //printk("Before SPI %p begin\n", _pspi);
   _pspi->begin();
+  _spiSettings = SPISettings(_SPI_CLOCK, MSBFIRST, _SPI_MODE);
+
   //printk("\tAfter\n");
   // Lets grab hold of the zephyr SPI data.
 
@@ -1623,9 +1625,9 @@ void ST77XX_zephyr_n::drawLine(int16_t x0, int16_t y0, int16_t x1, int16_t y1,
 
 #ifdef ENABLE_ST77XX_FRAMEBUFFER
   if (!_use_fbtft)
-    beginSPITransaction(_SPI_CLOCK);
+    beginSPITransaction();
 #else
-  beginSPITransaction(_SPI_CLOCK);
+  beginSPITransaction();
 #endif
   int16_t xbegin = x0;
   if (steep) {
@@ -1689,7 +1691,7 @@ void ST77XX_zephyr_n::drawRect(int16_t x, int16_t y, int16_t w, int16_t h,
   } else
 #endif
   {
-    beginSPITransaction(_SPI_CLOCK);
+    beginSPITransaction();
     HLine(x, y, w, color);
     HLine(x, y + h - 1, w, color);
     VLine(x, y, h, color);
@@ -2110,7 +2112,7 @@ void ST77XX_zephyr_n::drawChar(int16_t x, int16_t y, unsigned char c,
       if ((y + h - 1) >= _displayclipy2)
         h = _displayclipy2 - y;
 
-      beginSPITransaction(_SPI_CLOCK);
+      beginSPITransaction();
       setAddr(x, y, x + w - 1, y + h - 1);
 
       y = y_char_top; // restore the actual y.
@@ -2656,7 +2658,7 @@ void ST77XX_zephyr_n::drawFontChar(unsigned int c) {
 #endif
     {
 
-      beginSPITransaction(_SPI_CLOCK);
+      beginSPITransaction();
       // Serial.printf("SetAddr %d %d %d %d\n", start_x_min, start_y_min, end_x,
       // end_y);
       // output rectangle we are updating... We have already clipped end_x/y,
@@ -3422,7 +3424,7 @@ void ST77XX_zephyr_n::drawGFXFontChar(unsigned int c) {
       // Serial.printf("    SPI (%d %d) (%d %d)\n", x_start, y_start, x_end,
       // y_end);Serial.flush();
       // compute the actual region we will output given
-      beginSPITransaction(_SPI_CLOCK);
+      beginSPITransaction();
 
       setAddr((x_start >= _displayclipx1) ? x_start : _displayclipx1,
               (y_start >= _displayclipy1) ? y_start : _displayclipy1, x_end - 1,
@@ -3642,7 +3644,7 @@ boolean ST77XX_zephyr_n::getTextWrap() { return wrap; }
 uint8_t ST77XX_zephyr_n::getRotation(void) { return _rotation; }
 
 void ST77XX_zephyr_n::sleep(bool enable) {
-  beginSPITransaction(_SPI_CLOCK);
+  beginSPITransaction();
   if (enable) {
     writecommand_cont(ST77XX_DISPOFF);
     writecommand_last(ST77XX_SLPIN);
@@ -3934,7 +3936,7 @@ void ST77XX_zephyr_n::updateScreen(void) // call to say update the screen now.
 // Will go by buffer as maybe can do interesting things?
 #ifdef ENABLE_ST77XX_FRAMEBUFFER
   if (_use_fbtft) {
-    beginSPITransaction(_SPI_CLOCK);
+    beginSPITransaction();
     if (_standard && !_updateChangedAreasOnly) {
       // Doing full window.
       setAddr(0, 0, _width - 1, _height - 1);
@@ -4002,7 +4004,7 @@ bool ST77XX_zephyr_n::updateScreenAsync(bool update_cont) {
   #if defined(CONFIG_SPI_ASYNC) && defined(CONFIG_SPI_STM32_INTERRUPT)
   #ifdef ENABLE_ST77XX_FRAMEBUFFER
   if (_use_fbtft) {
-    beginSPITransaction(_SPI_CLOCK);
+    beginSPITransaction();
     // Doing full window.
     setAddr(0, 0, _width - 1, _height - 1);
     writecommand_cont(ST77XX_RAMWR);

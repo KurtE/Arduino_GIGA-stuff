@@ -77,7 +77,7 @@ void  ST7789_zephyr::begin(uint16_t width, uint16_t height, uint8_t mode, uint32
 
 void  ST7789_zephyr::setRotation(uint8_t m) 
 {
-  beginSPITransaction(_SPI_CLOCK);
+  beginSPITransaction();
   writecommand_cont(ST77XX_MADCTL);
   _rotation = m % 4; // can't be higher than 3
   switch (_rotation) {
