@@ -454,6 +454,7 @@ public:
   int16_t _height = ST77XX_TFTHEIGHT; // Display w/h as modified by current rotation
   int16_t _screenWidth = ST77XX_TFTWIDTH;
   int16_t _screenHeight = ST77XX_TFTHEIGHT; // Display w/h as modified by current rotation
+  uint8_t tabcolor = 0;
 
   int16_t cursor_x = 0; 
   int16_t cursor_y = 0;
@@ -876,6 +877,31 @@ public:
   virtual void  setRotation(uint8_t m);
 
 };
+
+
+// some flags for initR() :(
+#define INITR_GREENTAB 0x0
+#define INITR_REDTAB   0x1
+#define INITR_BLACKTAB 0x2
+
+#define INITR_18GREENTAB    INITR_GREENTAB
+#define INITR_18REDTAB      INITR_REDTAB
+#define INITR_18BLACKTAB    INITR_BLACKTAB
+#define INITR_144GREENTAB   0x1
+#define INITR_144GREENTAB_OFFSET   0x4
+#define INITR_MINI160x80  0x05
+#define INITR_MINI160x80_ST7735S 0x06
+
+
+class ST7735_zephyr : public ST77XX_zephyr_n  {
+public:
+  ST7735_zephyr(SPIClass *pspi, uint8_t CS, uint8_t DC, uint8_t RST = 255); 
+
+  void initB(uint32_t spi_clock = ST77XX_SPICLOCK);                             // for ST7735B displays
+  void initR(uint8_t options = INITR_GREENTAB, uint32_t spi_clock = ST77XX_SPICLOCK); // for ST7735R
+  virtual void  setRotation(uint8_t m);
+};
+
 
 
 #endif // __cplusplus

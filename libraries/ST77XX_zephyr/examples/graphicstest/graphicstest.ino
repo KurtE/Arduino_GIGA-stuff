@@ -59,13 +59,13 @@
 // an output. This is much faster - also required if you want
 // to use the microSD card (see the image drawing example)
 // For 1.44" and 1.8" TFT with ST7735 use
-//ST7735_zephyr tft = ST7735_zephyr(TFT_CS, TFT_DC, TFT_RST);
+ST7735_zephyr tft = ST7735_zephyr(&SPI, TFT_CS, TFT_DC, TFT_RST);
 
 // For 1.54" TFT with ST7789
-//ST7789_zephyr tft = ST7789_zephyr(TFT_CS, TFT_DC, TFT_RST);
+//ST7789_zephyr tft = ST7789_zephyr(&SPI, TFT_CS, TFT_DC, TFT_RST);
 
 // For 3.5" or 4.0" TFT with ST7796
-ST7796_zephyr tft = ST7796_zephyr(&SPI, TFT_CS, TFT_DC, TFT_RST);
+//ST7796_zephyr tft = ST7796_zephyr(&SPI, TFT_CS, TFT_DC, TFT_RST);
 
 // forward references:
 // forward references:
@@ -100,7 +100,7 @@ void setup(void) {
   //tft.initR(INITR_144GREENTAB);
 
   // Or use this initializer (uncomment) if you're using a .96" TFT(160x80)
-  //tft.initR(INITR_MINI160x80);
+  tft.initR(INITR_MINI160x80);
 
   // Or use this initializer (uncomment) for Some 1.44" displays use different memory offsets
   // Try it if yours is not working properly
@@ -112,7 +112,7 @@ void setup(void) {
 
   // OR use this initializer (uncomment) if using a 2.0" 320x240 TFT:
   //tft.init(240, 320);           // Init ST7789 320x240
-  tft.init(320, 480);
+  //tft.init(320, 480);
   printk("tft.init called\n");
   // OR use this initializer (uncomment) if using a 240x240 clone 
   // that does not have a CS pin2.0" 320x240 TFT:
