@@ -17,9 +17,9 @@
 #include "SPI.h"
 #include "ILI9341_GIGA_zephyr.h"
 // *************** Change to your Pin numbers ***************
-#define TFT_DC 9
-#define TFT_RST 8
-#define TFT_CS 10
+#define TFT_DC 4
+#define TFT_RST 3
+#define TFT_CS 2
 
 //ILI9341_GIGA_n tft(&SPI1, TFT_CS, TFT_DC, TFT_RST);
 ILI9341_GIGA_n tft(TFT_CS, TFT_DC, TFT_RST);
@@ -29,7 +29,7 @@ void setup() {
   while (!Serial && millis() < 5000) ; // wait for Arduino Serial Monitor
   delay(500);
   Serial.println("ILI9341 Test!");
-  tft.setSPI(SPI1);
+//  tft.setSPI(SPI1);
   tft.begin(30000000);
   Serial.println("after TFT.begin");
 

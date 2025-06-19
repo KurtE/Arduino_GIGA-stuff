@@ -1,4 +1,4 @@
-// https://github.com/KurtE/ILI9341_GIGA_n
+// https://github.com/KurtE/ST77XX_zephyr_n
 // http://forum.pjrc.com/threads/26305-Highly-optimized-ILI9341-(320x240-TFT-color-display)-library
 
 /***************************************************
@@ -51,14 +51,18 @@
 
 // <\SoftEgg>
 
-#include "ILI9341_GIGA_zephyr.h"
+#include "ST77XX_zephyr.h"
 #include <SPI.h>
 #include <api/itoa.h>
 
 
-#define WIDTH ILI9341_TFTWIDTH
-#define HEIGHT ILI9341_TFTHEIGHT
-#define CBALLOC (ILI9341_TFTHEIGHT * ILI9341_TFTWIDTH * 2)
+#define WIDTH _screenWidth
+#define HEIGHT _screenHeight
+#define CBALLOC (_screenHeight * _screenWidth * 2)
+
+
+uint16_t ST77XX_zephyr_n::s_row_buff[480]; // 
+
 
 // Constructor when using hardware ILI9241_KINETISK__pspi->  Faster, but must
 // use SPI pins
@@ -67,35 +71,58 @@
 // Constructor when using hardware ILI9241_KINETISK__pspi->  Faster, but must
 // use SPI pins
 // specific to each board type (e.g. 11,13 for Uno, 51,52 for Mega, etc.)
+#ifdef ZEPHYR_PINNAMES_H
 
-#if 0
-ILI9341_GIGA_n::ILI9341_GIGA_n(SPIClass *pspi, uint8_t cs, uint8_t dc, uint8_t rst) {
-  _pspi = pspi;
-#else
-ILI9341_GIGA_n::ILI9341_GIGA_n(uint8_t cs, uint8_t dc, uint8_t rst) {
+// Pin Name versions
+ST77XX_zephyr_n::ST77XX_zephyr_n(SPIClass *pspi, PinName cs_pin, PinName dc_pin, PinName rst_pin) : 
+    _pspi(pspi), _cs(cs_pin), _dc(dc_pin), _rst(rst_pin) 
+{
+#ifdef ENABLE_ST77XX_FRAMEBUFFER
+  _pfbtft = NULL;
+  _use_fbtft = 0; // Are we in frame buffer mode?
+  _we_allocated_buffer = NULL;
 #endif
-  _cs = cs;
-  _dc = dc;
-  _rst = rst;
+}
 
-  _width = WIDTH;
-  _height = HEIGHT;
-
-  rotation = 0;
-  cursor_y = cursor_x = 0;
-  textsize_x = textsize_y = 1;
-  textcolor = textbgcolor = 0xFFFF;
-  wrap = true;
-  font = NULL;
-  gfxFont = NULL;
-  setClipRect();
-  setOrigin();
-
+ST77XX_zephyr_n::ST77XX_zephyr_n(PinName cs_pin, PinName dc_pin, PinName rst_pin) :
+    _cs(cs_pin), _dc(dc_pin), _rst(rst_pin) 
+  {
   // Added to see how much impact actually using non hardware CS pin might be
   //_cspinmask = 0;
   //_csport = NULL;
 
-#ifdef ENABLE_ILI9341_FRAMEBUFFER
+#ifdef ENABLE_ST77XX_FRAMEBUFFER
+  _pfbtft = NULL;
+  _use_fbtft = 0; // Are we in frame buffer mode?
+  _we_allocated_buffer = NULL;
+#endif
+
+}
+
+ST77XX_zephyr_n::ST77XX_zephyr_n(SPIClass *pspi, uint8_t cs_pin, uint8_t dc_pin, uint8_t rst_pin) : 
+    _pspi(pspi) 
+{
+  _cs = digitalPinToPinName(cs_pin);
+  _dc = digitalPinToPinName(dc_pin);
+  _rst = digitalPinToPinName(rst_pin);
+#ifdef ENABLE_ST77XX_FRAMEBUFFER
+  _pfbtft = NULL;
+  _use_fbtft = 0; // Are we in frame buffer mode?
+  _we_allocated_buffer = NULL;
+#endif
+}
+
+ST77XX_zephyr_n::ST77XX_zephyr_n(uint8_t cs_pin, uint8_t dc_pin, uint8_t rst_pin)
+  {
+  // Added to see how much impact actually using non hardware CS pin might be
+  //_cspinmask = 0;
+  //_csport = NULL;
+
+  _cs = digitalPinToPinName(cs_pin);
+  _dc = digitalPinToPinName(dc_pin);
+  _rst = digitalPinToPinName(rst_pin);
+
+#ifdef ENABLE_ST77XX_FRAMEBUFFER
   _pfbtft = NULL;
   _use_fbtft = 0; // Are we in frame buffer mode?
   _we_allocated_buffer = NULL;
@@ -104,31 +131,57 @@ ILI9341_GIGA_n::ILI9341_GIGA_n(uint8_t cs, uint8_t dc, uint8_t rst) {
 }
 
 
+#else
+ST77XX_zephyr_n::ST77XX_zephyr_n(SPIClass *pspi, uint8_t cs_pin, uint8_t dc_pin, uint8_t rst_pin) : 
+    _pspi(pspi), _cs(cs_pin), _dc(dc_pin), _rst(rst_pin) 
+{
+#ifdef ENABLE_ST77XX_FRAMEBUFFER
+  _pfbtft = NULL;
+  _use_fbtft = 0; // Are we in frame buffer mode?
+  _we_allocated_buffer = NULL;
+#endif
+}
+
+ST77XX_zephyr_n::ST77XX_zephyr_n(uint8_t cs_pin, uint8_t dc_pin, uint8_t rst_pin) :
+    _cs(cs_pin), _dc(dc_pin), _rst(rst_pin) 
+  {
+  // Added to see how much impact actually using non hardware CS pin might be
+  //_cspinmask = 0;
+  //_csport = NULL;
+
+#ifdef ENABLE_ST77XX_FRAMEBUFFER
+  _pfbtft = NULL;
+  _use_fbtft = 0; // Are we in frame buffer mode?
+  _we_allocated_buffer = NULL;
+#endif
+
+}
+#endif
 
 //=======================================================================
 
-void ILI9341_GIGA_n::setAddrWindow(uint16_t x0, uint16_t y0, uint16_t x1,
+void ST77XX_zephyr_n::setAddrWindow(uint16_t x0, uint16_t y0, uint16_t x1,
                                 uint16_t y1) {
   beginSPITransaction(_SPI_CLOCK);
   setAddr(x0, y0, x1, y1);
-  writecommand_last(ILI9341_RAMWR); // write to RAM
+  writecommand_last(ST77XX_RAMWR); // write to RAM
   endSPITransaction();
 }
 
-void ILI9341_GIGA_n::pushColor(uint16_t color) {
+void ST77XX_zephyr_n::pushColor(uint16_t color) {
   beginSPITransaction(_SPI_CLOCK);
   writedata16_last(color);
   endSPITransaction();
 }
 
-void ILI9341_GIGA_n::drawPixel(int16_t x, int16_t y, uint16_t color) {
+void ST77XX_zephyr_n::drawPixel(int16_t x, int16_t y, uint16_t color) {
   x += _originx;
   y += _originy;
   if ((x < _displayclipx1) || (x >= _displayclipx2) || (y < _displayclipy1) ||
       (y >= _displayclipy2))
     return;
 
-#ifdef ENABLE_ILI9341_FRAMEBUFFER
+#ifdef ENABLE_ST77XX_FRAMEBUFFER
   if (_use_fbtft) {
     updateChangedRange(
         x, y); // update the range of the screen that has been changed;
@@ -139,13 +192,13 @@ void ILI9341_GIGA_n::drawPixel(int16_t x, int16_t y, uint16_t color) {
   {
     beginSPITransaction(_SPI_CLOCK);
     setAddr(x, y, x, y);
-    writecommand_cont(ILI9341_RAMWR);
+    writecommand_cont(ST77XX_RAMWR);
     writedata16_last(color);
     endSPITransaction();
   }
 }
 
-void ILI9341_GIGA_n::drawFastVLine(int16_t x, int16_t y, int16_t h,
+void ST77XX_zephyr_n::drawFastVLine(int16_t x, int16_t y, int16_t h,
                                 uint16_t color) {
   //printf("\tdrawFastHLine(%d, %d, %d, %x)\n", x, y, h, color);
   x += _originx;
@@ -162,7 +215,7 @@ void ILI9341_GIGA_n::drawFastVLine(int16_t x, int16_t y, int16_t h,
   if (h < 1)
     return;
 
-#ifdef ENABLE_ILI9341_FRAMEBUFFER
+#ifdef ENABLE_ST77XX_FRAMEBUFFER
   if (_use_fbtft) {
     updateChangedRange(
         x, y, 1, h); // update the range of the screen that has been changed;
@@ -176,17 +229,19 @@ void ILI9341_GIGA_n::drawFastVLine(int16_t x, int16_t y, int16_t h,
   {
     beginSPITransaction(_SPI_CLOCK);
     setAddr(x, y, x, y + h - 1);
-    writecommand_cont(ILI9341_RAMWR);
-    while (h-- > 1) {
-      writedata16_cont(color);
-    }
-    writedata16_last(color);
+    writecommand_cont(ST77XX_RAMWR);
+    setDataMode();
+    for (uint16_t i = 0; i < h; i++) s_row_buff[i] = color;
+
+    struct spi_buf tx_buf = { .buf = (void*)s_row_buff, .len = (size_t)(h * 2 )};
+    const struct spi_buf_set tx_buf_set = { .buffers = &tx_buf, .count = 1 };
+    spi_transceive(_spi_dev, &_config16, &tx_buf_set, nullptr);
     endSPITransaction();
   }
   //printf("\tDFVL end\n");
 }
 
-void ILI9341_GIGA_n::drawFastHLine(int16_t x, int16_t y, int16_t w,
+void ST77XX_zephyr_n::drawFastHLine(int16_t x, int16_t y, int16_t w,
                                 uint16_t color) {
 //  printf("\tdrawFastHLine(%d, %d, %d, %x)\n", x, y, w, color);
   x += _originx;
@@ -204,7 +259,7 @@ void ILI9341_GIGA_n::drawFastHLine(int16_t x, int16_t y, int16_t w,
   if (w < 1)
     return;
 
-#ifdef ENABLE_ILI9341_FRAMEBUFFER
+#ifdef ENABLE_ST77XX_FRAMEBUFFER
   if (_use_fbtft) {
     updateChangedRange(
         x, y, w, 1); // update the range of the screen that has been changed;
@@ -227,18 +282,20 @@ void ILI9341_GIGA_n::drawFastHLine(int16_t x, int16_t y, int16_t w,
   {
     beginSPITransaction(_SPI_CLOCK);
     setAddr(x, y, x + w - 1, y);
-    writecommand_cont(ILI9341_RAMWR);
-    while (w-- > 1) {
-      writedata16_cont(color);
-    }
-    writedata16_last(color);
+    writecommand_cont(ST77XX_RAMWR);
+    setDataMode();
+    for (uint16_t i = 0; i < w; i++) s_row_buff[i] = color;
+
+    struct spi_buf tx_buf = { .buf = (void*)s_row_buff, .len = (size_t)(w * 2 )};
+    const struct spi_buf_set tx_buf_set = { .buffers = &tx_buf, .count = 1 };
+    spi_transceive(_spi_dev, &_config16, &tx_buf_set, nullptr);
     endSPITransaction();
   }
 //  printf("\tDFHL end\n");
 }
 
-void ILI9341_GIGA_n::fillScreen(uint16_t color) {
-#ifdef ENABLE_ILI9341_FRAMEBUFFER
+void ST77XX_zephyr_n::fillScreen(uint16_t color) {
+#ifdef ENABLE_ST77XX_FRAMEBUFFER
   if (_use_fbtft && _standard) {
     // Speed up lifted from Franks DMA code... _standard is if no offsets and
     // rects..
@@ -249,7 +306,7 @@ void ILI9341_GIGA_n::fillScreen(uint16_t color) {
 
     uint32_t *pfbPixel = (uint32_t *)_pfbtft;
     uint32_t *pfbtft_end = (uint32_t *)((
-        uint16_t *)&_pfbtft[(ILI9341_TFTWIDTH * ILI9341_TFTHEIGHT)]); // setup
+        uint16_t *)&_pfbtft[(_screenWidth * _screenHeight)]); // setup
     while (pfbPixel < pfbtft_end) {
       *pfbPixel++ = color32;
       *pfbPixel++ = color32;
@@ -292,8 +349,7 @@ void ILI9341_GIGA_n::fillScreen(uint16_t color) {
   }
 }
 
-// fill a rectangle
-void ILI9341_GIGA_n::fillRect(int16_t x, int16_t y, int16_t w, int16_t h,
+void ST77XX_zephyr_n::fillRect(int16_t x, int16_t y, int16_t w, int16_t h,
                            uint16_t color) {
   // printf("\tfillRect(%d, %d, %d, %d, %x)\n", x, y, w, h, color);
   x += _originx;
@@ -317,7 +373,7 @@ void ILI9341_GIGA_n::fillRect(int16_t x, int16_t y, int16_t w, int16_t h,
   if ((y + h - 1) >= _displayclipy2)
     h = _displayclipy2 - y;
 
-#ifdef ENABLE_ILI9341_FRAMEBUFFER
+#ifdef ENABLE_ST77XX_FRAMEBUFFER
   if (_use_fbtft) {
     updateChangedRange(
         x, y, w, h); // update the range of the screen that has been changed;
@@ -353,26 +409,44 @@ void ILI9341_GIGA_n::fillRect(int16_t x, int16_t y, int16_t w, int16_t h,
     // it'll cost more overhead, so we don't stall other SPI libs
     beginSPITransaction(_SPI_CLOCK);
     setAddr(x, y, x + w - 1, y + h - 1);
-    writecommand_cont(ILI9341_RAMWR);
+    writecommand_cont(ST77XX_RAMWR);
+    setDataMode();
+#if 1
+    uint32_t count_pixels = w * h;
+    uint16_t array_fill_count = min(count_pixels, sizeof(s_row_buff)/sizeof(s_row_buff[0]));
+    struct spi_buf tx_buf = { .buf = (void*)s_row_buff, .len = (size_t)(array_fill_count * 2 )};
+    const struct spi_buf_set tx_buf_set = { .buffers = &tx_buf, .count = 1 };
+    for (uint16_t i = 0; i < array_fill_count; i++) s_row_buff[i] = color;
+    while (count_pixels) {
+      spi_transceive(_spi_dev, &_config16, &tx_buf_set, nullptr);
+      count_pixels -= array_fill_count;
+      if (count_pixels < array_fill_count) {
+        array_fill_count = count_pixels;
+        tx_buf.len = (size_t)(array_fill_count * 2 );
+      }
+    }
+
+#else  
+    uint16_t color_swapped = (color >> 8) | ((color & 0xff) << 8);
     for (y = h; y > 0; y--) {
+      #if 1
+      for (uint16_t i = 0; i < w; i++) s_row_buff[i] = color_swapped;
+        _pspi->transfer(s_row_buff, w * 2);
+      #else
       for (x = w; x > 1; x--) {
         writedata16_cont(color);
       }
       writedata16_cont(color);  // was last
-#if 0
-			if (y > 1 && (y & 1)) {
-				endSPITransaction();
-				beginSPITransaction(_SPI_CLOCK);
-			}
-#endif
+      #endif
     }
+#endif
     endSPITransaction();
   }
   // printf("\tfillRect - end\n");
 }
 
 // fillRectVGradient	- fills area with vertical gradient
-void ILI9341_GIGA_n::fillRectVGradient(int16_t x, int16_t y, int16_t w, int16_t h,
+void ST77XX_zephyr_n::fillRectVGradient(int16_t x, int16_t y, int16_t w, int16_t h,
                                     uint16_t color1, uint16_t color2) {
   x += _originx;
   y += _originy;
@@ -403,7 +477,7 @@ void ILI9341_GIGA_n::fillRectVGradient(int16_t x, int16_t y, int16_t w, int16_t 
   g = g1;
   b = b1;
 
-#ifdef ENABLE_ILI9341_FRAMEBUFFER
+#ifdef ENABLE_ST77XX_FRAMEBUFFER
   if (_use_fbtft) {
     updateChangedRange(
         x, y, w, h); // update the range of the screen that has been changed;
@@ -443,7 +517,7 @@ void ILI9341_GIGA_n::fillRectVGradient(int16_t x, int16_t y, int16_t w, int16_t 
   {
     beginSPITransaction(_SPI_CLOCK);
     setAddr(x, y, x + w - 1, y + h - 1);
-    writecommand_cont(ILI9341_RAMWR);
+    writecommand_cont(ST77XX_RAMWR);
     for (y = h; y > 0; y--) {
       uint16_t color = RGB14tocolor565(r, g, b);
 
@@ -464,7 +538,7 @@ void ILI9341_GIGA_n::fillRectVGradient(int16_t x, int16_t y, int16_t w, int16_t 
 }
 
 // fillRectHGradient	- fills area with horizontal gradient
-void ILI9341_GIGA_n::fillRectHGradient(int16_t x, int16_t y, int16_t w, int16_t h,
+void ST77XX_zephyr_n::fillRectHGradient(int16_t x, int16_t y, int16_t w, int16_t h,
                                     uint16_t color1, uint16_t color2) {
   x += _originx;
   y += _originy;
@@ -495,7 +569,7 @@ void ILI9341_GIGA_n::fillRectHGradient(int16_t x, int16_t y, int16_t w, int16_t 
   r = r1;
   g = g1;
   b = b1;
-#ifdef ENABLE_ILI9341_FRAMEBUFFER
+#ifdef ENABLE_ST77XX_FRAMEBUFFER
   if (_use_fbtft) {
     updateChangedRange(
         x, y, w, h); // update the range of the screen that has been changed;
@@ -518,7 +592,7 @@ void ILI9341_GIGA_n::fillRectHGradient(int16_t x, int16_t y, int16_t w, int16_t 
   {
     beginSPITransaction(_SPI_CLOCK);
     setAddr(x, y, x + w - 1, y + h - 1);
-    writecommand_cont(ILI9341_RAMWR);
+    writecommand_cont(ST77XX_RAMWR);
     for (y = h; y > 0; y--) {
       for (x = w; x > 1; x--) {
         color = RGB14tocolor565(r, g, b);
@@ -542,12 +616,12 @@ void ILI9341_GIGA_n::fillRectHGradient(int16_t x, int16_t y, int16_t w, int16_t 
 }
 
 // fillScreenVGradient - fills screen with vertical gradient
-void ILI9341_GIGA_n::fillScreenVGradient(uint16_t color1, uint16_t color2) {
+void ST77XX_zephyr_n::fillScreenVGradient(uint16_t color1, uint16_t color2) {
   fillRectVGradient(0, 0, _width, _height, color1, color2);
 }
 
 // fillScreenHGradient - fills screen with horizontal gradient
-void ILI9341_GIGA_n::fillScreenHGradient(uint16_t color1, uint16_t color2) {
+void ST77XX_zephyr_n::fillScreenHGradient(uint16_t color1, uint16_t color2) {
   fillRectHGradient(0, 0, _width, _height, color1, color2);
 }
 
@@ -559,30 +633,40 @@ void ILI9341_GIGA_n::fillScreenHGradient(uint16_t color1, uint16_t color2) {
 #define MADCTL_BGR 0x08
 #define MADCTL_MH 0x04
 
-void ILI9341_GIGA_n::setRotation(uint8_t m) {
-  rotation = m % 4; // can't be higher than 3
+void ST77XX_zephyr_n::setRotation(uint8_t m) {
+  _rotation = m % 4; // can't be higher than 3
   beginSPITransaction(_SPI_CLOCK);
-  writecommand_cont(ILI9341_MADCTL);
-  switch (rotation) {
+  writecommand_cont(ST77XX_MADCTL);
+  switch (_rotation) {
   case 0:
     writedata8_last(MADCTL_MX | MADCTL_BGR);
-    _width = ILI9341_TFTWIDTH;
-    _height = ILI9341_TFTHEIGHT;
+    _width = _screenWidth;
+    _height = _screenHeight;
+    _xstart = _colstart;
+    _ystart = _rowstart;
     break;
   case 1:
     writedata8_last(MADCTL_MV | MADCTL_BGR);
-    _width = ILI9341_TFTHEIGHT;
-    _height = ILI9341_TFTWIDTH;
+    _width = _screenHeight;
+    _height = _screenWidth;
+    _ystart = _colstart;
+    _xstart = _rowstart;
     break;
   case 2:
     writedata8_last(MADCTL_MY | MADCTL_BGR);
-    _width = ILI9341_TFTWIDTH;
-    _height = ILI9341_TFTHEIGHT;
+    _width = _screenWidth;
+    _height = _screenHeight;
+    _xstart = _colstart;
+    // hack to make work on a couple different displays
+    _ystart = (_rowstart==0 || _rowstart==32)? 0 : 1;//_rowstart;
     break;
   case 3:
     writedata8_last(MADCTL_MX | MADCTL_MY | MADCTL_MV | MADCTL_BGR);
-    _width = ILI9341_TFTHEIGHT;
-    _height = ILI9341_TFTWIDTH;
+    _width = _screenHeight;
+    _height = _screenWidth;
+    _ystart = _colstart;
+    // hack to make work on a couple different displays
+    _xstart = (_rowstart==0 || _rowstart==32)? 0 : 1;//_rowstart;
     break;
   }
   endSPITransaction();
@@ -593,36 +677,43 @@ void ILI9341_GIGA_n::setRotation(uint8_t m) {
   cursor_y = 0;
 }
 
-void ILI9341_GIGA_n::setScrollMargins(uint16_t top, uint16_t bottom) {
+void ST77XX_zephyr_n::setScrollMargins(uint16_t top, uint16_t bottom) {
+  UNUSED(top);
+  UNUSED(bottom);
+#ifdef LATER
   // TFA+VSA+BFA must equal 320
   if (top + bottom > _height) return;
   uint16_t middle = _height - (top + bottom);
 
   beginSPITransaction(_SPI_CLOCK);
-  writecommand_cont(ILI9341_VSCRDEF);
+  writecommand_cont(ST77XX_VSCRDEF);
   writedata16_cont(top);
   writedata16_cont(middle);
   writedata16_last(bottom);
   endSPITransaction();
+#endif
 }
 
 
-void ILI9341_GIGA_n::setScroll(uint16_t offset) {
+void ST77XX_zephyr_n::setScroll(uint16_t offset) {
+  UNUSED(offset);
+#ifdef LATER
   beginSPITransaction(_SPI_CLOCK);
-  writecommand_cont(ILI9341_VSCRSADD);
+  writecommand_cont(ST77XX_VSCRSADD);
   writedata16_last(offset);
   endSPITransaction();
+#endif
 }
 
-void ILI9341_GIGA_n::invertDisplay(boolean i) {
+void ST77XX_zephyr_n::invertDisplay(boolean i) {
   beginSPITransaction(_SPI_CLOCK);
-  writecommand_last(i ? ILI9341_INVON : ILI9341_INVOFF);
+  writecommand_last(i ? ST77XX_INVON : ST77XX_INVOFF);
   endSPITransaction();
 }
-void ILI9341_GIGA_n::setFrameRateControl(uint8_t mode) {
+void ST77XX_zephyr_n::setFrameRateControl(uint8_t mode) {
   // Do simple version
   beginSPITransaction(_SPI_CLOCK/4);
-  writecommand_cont(ILI9341_FRMCTR1);
+  writecommand_cont(ST77XX_FRMCTR1);
   writedata8_cont((mode >> 4) & 0x3); // Output DIVA setting (0-3)
   writedata8_last(0x10 + (mode & 0xf)); // Output RTNA
   endSPITransaction();
@@ -632,8 +723,8 @@ void ILI9341_GIGA_n::setFrameRateControl(uint8_t mode) {
 
 // Read Pixel at x,y and get back 16-bit packed color
 #define READ_PIXEL_PUSH_BYTE 0x7F
-uint16_t ILI9341_GIGA_n::readPixel(int16_t x, int16_t y) {
-#ifdef ENABLE_ILI9341_FRAMEBUFFER
+uint16_t ST77XX_zephyr_n::readPixel(int16_t x, int16_t y) {
+#ifdef ENABLE_ST77XX_FRAMEBUFFER
   if (_use_fbtft) {
     x += _originx;
     y += _originy;
@@ -649,7 +740,7 @@ uint16_t ILI9341_GIGA_n::readPixel(int16_t x, int16_t y) {
 }
 // Now lets see if we can read in multiple pixels
 
-void ILI9341_GIGA_n::readRect(int16_t x, int16_t y, int16_t w, int16_t h,
+void ST77XX_zephyr_n::readRect(int16_t x, int16_t y, int16_t w, int16_t h,
                            uint16_t *pcolors) {
   // Use our Origin.
   x += _originx;
@@ -658,7 +749,7 @@ void ILI9341_GIGA_n::readRect(int16_t x, int16_t y, int16_t w, int16_t h,
 
 
   // printf("readRect(%d, %d, %u, %u, %p): %u\n", x, y, w, h, pcolors, _use_fbtft);
-#ifdef ENABLE_ILI9341_FRAMEBUFFER
+#ifdef ENABLE_ST77XX_FRAMEBUFFER
   if (_use_fbtft) {
     uint16_t *pfbPixel_row = &_pfbtft[y * _width + x];
     for (; h > 0; h--) {
@@ -685,7 +776,7 @@ void ILI9341_GIGA_n::readRect(int16_t x, int16_t y, int16_t w, int16_t h,
   beginSPITransaction(_SPI_CLOCK_READ);
 
   setAddr(x, y, x + w - 1, y + h - 1);
-  writecommand_cont(ILI9341_RAMRD); // read from RAM
+  writecommand_cont(ST77XX_RAMRD); // read from RAM
 
   uint8_t push_byte = READ_PIXEL_PUSH_BYTE;
   writedata8_last(0); // lets output and wait for it to complete.
@@ -725,9 +816,10 @@ void ILI9341_GIGA_n::readRect(int16_t x, int16_t y, int16_t w, int16_t h,
 }
 
 // Now lets see if we can writemultiple pixels
-void ILI9341_GIGA_n::writeRect(int16_t x, int16_t y, int16_t w, int16_t h,
+void ST77XX_zephyr_n::writeRect(int16_t x, int16_t y, int16_t w, int16_t h,
                             const uint16_t *pcolors) {
 
+  int16_t image_width = w;
   if (x == CENTER)
     x = (_width - w) / 2;
   if (y == CENTER)
@@ -774,7 +866,7 @@ void ILI9341_GIGA_n::writeRect(int16_t x, int16_t y, int16_t w, int16_t h,
     x_clip_right -= w;
   }
 
-#ifdef ENABLE_ILI9341_FRAMEBUFFER
+#ifdef ENABLE_ST77XX_FRAMEBUFFER
   if (_use_fbtft) {
     //updateChangedRange(
     //    x, y, w, h); // update the range of the screen that has been changed;
@@ -818,14 +910,43 @@ void ILI9341_GIGA_n::writeRect(int16_t x, int16_t y, int16_t w, int16_t h,
 
   beginSPITransaction(_SPI_CLOCK);
   setAddr(x, y, x + w - 1, y + h - 1);
-  writecommand_cont(ILI9341_RAMWR);
-  for (y = h; y > 0; y--) {
+  writecommand_cont(ST77XX_RAMWR);
+  setDataMode();
+  if (x_clip_left || x_clip_right) {
+    #if 1
     pcolors += x_clip_left;
-    for (x = w; x > 1; x--) {
-      writedata16_cont(*pcolors++);
+    struct spi_buf tx_buf = { .buf = (void*)pcolors, .len = (size_t)(w * 2) };
+    const struct spi_buf_set tx_buf_set = { .buffers = &tx_buf, .count = 1 };
+    for (y = h; y > 0; y--) {
+      tx_buf.buf = (void*)pcolors;
+      spi_transceive(_spi_dev, &_config16, &tx_buf_set, nullptr);
+      pcolors += image_width;
+    }
+    #else
+    for (y = h; y > 0; y--) {
+      pcolors += x_clip_left;
+      for (x = w; x > 1; x--) {
+        writedata16_cont(*pcolors++);
+      }
+      writedata16_last(*pcolors++);
+      pcolors += x_clip_right;
+    }
+    #endif
+  } else {
+    // data us contiguious so output in one operation
+    #if 0
+    struct spi_buf tx_buf = { .buf = (void*)pcolors, .len = (size_t)(w * h * 2 )};
+    const struct spi_buf_set tx_buf_set = { .buffers = &tx_buf, .count = 1 };
+    spi_transceive(_spi_dev, &_config16, &tx_buf_set, nullptr);
+    #else
+    uint32_t len = w * h;
+    while (len > 1) {
+       writedata16_cont(*pcolors++);
+       len --;
     }
     writedata16_last(*pcolors++);
-    pcolors += x_clip_right;
+
+    #endif
   }
   endSPITransaction();
 }
@@ -834,9 +955,10 @@ void ILI9341_GIGA_n::writeRect(int16_t x, int16_t y, int16_t w, int16_t h,
 
 // Now lets see if we can writemultiple pixels
 //                                    screen rect
-void ILI9341_GIGA_n::writeSubImageRect(int16_t x, int16_t y, int16_t w, int16_t h, 
+void ST77XX_zephyr_n::writeSubImageRect(int16_t x, int16_t y, int16_t w, int16_t h, 
   int16_t image_offset_x, int16_t image_offset_y, int16_t image_width, int16_t image_height, const uint16_t *pcolors)
 {
+  UNUSED(image_height);
   if (x == CENTER) x = (_width - w) / 2;
   if (y == CENTER) y = (_height - h) / 2;
   x+=_originx;
@@ -875,7 +997,7 @@ void ILI9341_GIGA_n::writeSubImageRect(int16_t x, int16_t y, int16_t w, int16_t 
     x_clip_right -= w; 
   } 
 
-  #ifdef ENABLE_ILI9341_FRAMEBUFFER
+  #ifdef ENABLE_ST77XX_FRAMEBUFFER
   if (_use_fbtft) {
     uint16_t * pfbPixel_row = &_pfbtft[ y*_width + x];
     for (;h>0; h--) {
@@ -893,7 +1015,7 @@ void ILI9341_GIGA_n::writeSubImageRect(int16_t x, int16_t y, int16_t w, int16_t 
 
   beginSPITransaction(_SPI_CLOCK);
   setAddr(x, y, x+w-1, y+h-1);
-  writecommand_cont(ILI9341_RAMWR);
+  writecommand_cont(ST77XX_RAMWR);
   for(y=h; y>0; y--) {
     const uint16_t *pcolors_row = pcolors; 
     for(x=w; x>1; x--) {
@@ -905,9 +1027,10 @@ void ILI9341_GIGA_n::writeSubImageRect(int16_t x, int16_t y, int16_t w, int16_t 
   endSPITransaction();
 }
 
-void ILI9341_GIGA_n::writeSubImageRectBytesReversed(int16_t x, int16_t y, int16_t w, int16_t h, 
+void ST77XX_zephyr_n::writeSubImageRectBytesReversed(int16_t x, int16_t y, int16_t w, int16_t h, 
   int16_t image_offset_x, int16_t image_offset_y, int16_t image_width, int16_t image_height, const uint16_t *pcolors)
 {
+  UNUSED(image_height);
   if (x == CENTER) x = (_width - w) / 2;
   if (y == CENTER) y = (_height - h) / 2;
   x+=_originx;
@@ -946,7 +1069,7 @@ void ILI9341_GIGA_n::writeSubImageRectBytesReversed(int16_t x, int16_t y, int16_
     x_clip_right -= w; 
   } 
 
-  #ifdef ENABLE_ILI9341_FRAMEBUFFER
+  #ifdef ENABLE_ST77XX_FRAMEBUFFER
   if (_use_fbtft) {
     uint16_t * pfbPixel_row = &_pfbtft[ y*_width + x];
     for (;h>0; h--) {
@@ -964,7 +1087,7 @@ void ILI9341_GIGA_n::writeSubImageRectBytesReversed(int16_t x, int16_t y, int16_
 
   beginSPITransaction(_SPI_CLOCK);
   setAddr(x, y, x+w-1, y+h-1);
-  writecommand_cont(ILI9341_RAMWR);
+  writecommand_cont(ST77XX_RAMWR);
   for(y=h; y>0; y--) {
     const uint16_t *pcolors_row = pcolors; 
     for(x=w; x>1; x--) {
@@ -985,7 +1108,7 @@ void ILI9341_GIGA_n::writeSubImageRectBytesReversed(int16_t x, int16_t y, int16_
 //					bitmap data in array at pixels, one byte per
 //pixel
 //					color palette data in array at palette
-void ILI9341_GIGA_n::writeRect8BPP(int16_t x, int16_t y, int16_t w, int16_t h,
+void ST77XX_zephyr_n::writeRect8BPP(int16_t x, int16_t y, int16_t w, int16_t h,
                                 const uint8_t *pixels,
                                 const uint16_t *palette) {
   // Serial.printf("\nWR8: %d %d %d %d %x\n", x, y, w, h, (uint32_t)pixels);
@@ -1033,7 +1156,7 @@ void ILI9341_GIGA_n::writeRect8BPP(int16_t x, int16_t y, int16_t w, int16_t h,
   }
 // Serial.printf("WR8C: %d %d %d %d %x- %d %d\n", x, y, w, h, (uint32_t)pixels,
 // x_clip_right, x_clip_left);
-#ifdef ENABLE_ILI9341_FRAMEBUFFER
+#ifdef ENABLE_ST77XX_FRAMEBUFFER
   if (_use_fbtft) {
     updateChangedRange(
         x, y, w, h); // update the range of the screen that has been changed;
@@ -1053,7 +1176,7 @@ void ILI9341_GIGA_n::writeRect8BPP(int16_t x, int16_t y, int16_t w, int16_t h,
 
   beginSPITransaction(_SPI_CLOCK);
   setAddr(x, y, x + w - 1, y + h - 1);
-  writecommand_cont(ILI9341_RAMWR);
+  writecommand_cont(ST77XX_RAMWR);
   for (y = h; y > 0; y--) {
     pixels += x_clip_left;
     // Serial.printf("%x: ", (uint32_t)pixels);
@@ -1073,7 +1196,7 @@ void ILI9341_GIGA_n::writeRect8BPP(int16_t x, int16_t y, int16_t w, int16_t h,
 //pixel
 //					color palette data in array at palette
 //					width must be at least 2 pixels
-void ILI9341_GIGA_n::writeRect4BPP(int16_t x, int16_t y, int16_t w, int16_t h,
+void ST77XX_zephyr_n::writeRect4BPP(int16_t x, int16_t y, int16_t w, int16_t h,
                                 const uint8_t *pixels,
                                 const uint16_t *palette) {
   // Simply call through our helper
@@ -1085,7 +1208,7 @@ void ILI9341_GIGA_n::writeRect4BPP(int16_t x, int16_t y, int16_t w, int16_t h,
 //pixel
 //					color palette data in array at palette
 //					width must be at least 4 pixels
-void ILI9341_GIGA_n::writeRect2BPP(int16_t x, int16_t y, int16_t w, int16_t h,
+void ST77XX_zephyr_n::writeRect2BPP(int16_t x, int16_t y, int16_t w, int16_t h,
                                 const uint8_t *pixels,
                                 const uint16_t *palette) {
   // Simply call through our helper
@@ -1098,7 +1221,7 @@ void ILI9341_GIGA_n::writeRect2BPP(int16_t x, int16_t y, int16_t w, int16_t h,
 //pixel
 //					color palette data in array at palette
 //					width must be at least 8 pixels
-void ILI9341_GIGA_n::writeRect1BPP(int16_t x, int16_t y, int16_t w, int16_t h,
+void ST77XX_zephyr_n::writeRect1BPP(int16_t x, int16_t y, int16_t w, int16_t h,
                                 const uint8_t *pixels,
                                 const uint16_t *palette) {
   // Simply call through our helper
@@ -1110,7 +1233,7 @@ void ILI9341_GIGA_n::writeRect1BPP(int16_t x, int16_t y, int16_t w, int16_t h,
 //					bitmap data in array at pixels
 //  Currently writeRect1BPP, writeRect2BPP, writeRect4BPP use this to do all of
 //  the work.
-void ILI9341_GIGA_n::writeRectNBPP(int16_t x, int16_t y, int16_t w, int16_t h,
+void ST77XX_zephyr_n::writeRectNBPP(int16_t x, int16_t y, int16_t w, int16_t h,
                                 uint8_t bits_per_pixel, const uint8_t *pixels,
                                 const uint16_t *palette) {
   // Serial.printf("\nWR8: %d %d %d %d %x\n", x, y, w, h, (uint32_t)pixels);
@@ -1169,7 +1292,7 @@ void ILI9341_GIGA_n::writeRectNBPP(int16_t x, int16_t y, int16_t w, int16_t h,
   const uint8_t *pixels_row_start =
       pixels; // remember our starting position offset into row
 
-#ifdef ENABLE_ILI9341_FRAMEBUFFER
+#ifdef ENABLE_ST77XX_FRAMEBUFFER
   if (_use_fbtft) {
     updateChangedRange(
         x, y, w, h); // update the range of the screen that has been changed;
@@ -1197,7 +1320,7 @@ void ILI9341_GIGA_n::writeRectNBPP(int16_t x, int16_t y, int16_t w, int16_t h,
 
   beginSPITransaction(_SPI_CLOCK);
   setAddr(x, y, x + w - 1, y + h - 1);
-  writecommand_cont(ILI9341_RAMWR);
+  writecommand_cont(ST77XX_RAMWR);
   for (; h > 0; h--) {
     pixels = pixels_row_start;            // setup for this row
     uint8_t pixel_shift = row_shift_init; // Setup mask
@@ -1213,47 +1336,77 @@ void ILI9341_GIGA_n::writeRectNBPP(int16_t x, int16_t y, int16_t w, int16_t h,
     }
     pixels_row_start += count_of_bytes_per_row;
   }
-  writecommand_last(ILI9341_NOP);
+  writecommand_last(ST77XX_NOP);
   endSPITransaction();
 }
 
-static const uint8_t PROGMEM init_commands[] = {4, 0xEF, 0x03, 0x80, 0x02,
-                                        4, 0xCF, 0x00, 0XC1, 0X30, 
-                                        5, 0xED, 0x64, 0x03, 0X12, 0X81, 
-                                        4, 0xE8, 0x85, 0x00, 0x78, 
-                                        6, 0xCB, 0x39, 0x2C, 0x00, 0x34, 0x02,
-                                        2, 0xF7, 0x20,
-                                        3, 0xEA, 0x00, 0x00,
-                                        2, ILI9341_PWCTR1, 0x23, // Power control
-                                        2, ILI9341_PWCTR2, 0x10, // Power control
-                                        3, ILI9341_VMCTR1, 0x3e, 0x28, // VCM control
-                                        2, ILI9341_VMCTR2, 0x86, // VCM control2
-                                        2, ILI9341_MADCTL, 0x48, // Memory Access Control
-                                        2, ILI9341_PIXFMT, 0x55,
-                                        3, ILI9341_FRMCTR1, 0x00, 0x18,
-                                        4, ILI9341_DFUNCTR, 0x08, 0x82, 0x27, // Display Function Control
-                                        2, 0xF2, 0x00, // Gamma Function Disable
-                                        2, ILI9341_GAMMASET, 0x01, // Gamma curve selected
-                                        16, ILI9341_GMCTRP1, 0x0F, 0x31, 0x2B, 0x0C, 0x0E, 0x08, 0x4E,
-                                            0xF1, 0x37, 0x07, 0x10, 0x03, 0x0E, 0x09, 0x00, // Set Gamma
-                                        16, ILI9341_GMCTRN1, 0x00, 0x0E, 0x14, 0x03, 0x11, 0x07, 0x31,
-                                            0xC1, 0x48, 0x08, 0x0F, 0x0C, 0x31, 0x36, 0x0F, // Set Gamma
-                                        3, 0xb1, 0x00, 0x10, // FrameRate Control 119Hz
-                                        0};
+void ST77XX_zephyr_n::commandList(const uint8_t *addr)
+{
+	uint8_t  numCommands, numArgs;
+	uint16_t ms;
 
-void ILI9341_GIGA_n::begin(uint32_t spi_clock, uint32_t spi_clock_read) {
+	beginSPITransaction(_SPI_CLOCK/4);
+	numCommands = pgm_read_byte(addr++);		// Number of commands to follow
+	//Serial.printf("CommandList: numCmds:%d\n", numCommands); Serial.flush();
+	while(numCommands--) {				// For each command...
+		writecommand_last(pgm_read_byte(addr++));	//   Read, issue command
+		numArgs  = pgm_read_byte(addr++);	//   Number of args to follow
+		ms       = numArgs & CMD_LIST_DELAY;		//   If hibit set, delay follows args
+		numArgs &= ~CMD_LIST_DELAY;			//   Mask out delay bit
+		while(numArgs > 1) {			//   For each argument...
+			writedata8_cont(pgm_read_byte(addr++)); //   Read, issue argument
+			numArgs--;
+		}
+
+		if (numArgs) writedata8_last(pgm_read_byte(addr++)); //   Read, issue argument - wait until this one completes
+		if(ms) {
+			ms = pgm_read_byte(addr++);	// Read post-command delay time (ms)
+			if(ms == 255) ms = 500;		// If 255, delay for 500 ms
+			//Serial.printf("delay %d\n", ms); Serial.flush();
+			endSPITransaction();
+			delay(ms);
+			beginSPITransaction(_SPI_CLOCK);
+		}
+	}
+	endSPITransaction();
+}
+
+
+
+void  ST77XX_zephyr_n::begin(uint16_t width, uint16_t height, uint8_t mode, uint32_t spi_clock) {
   // verify SPI pins are valid;
   // allow user to say use current ones...
-  _SPI_CLOCK = spi_clock;           // #define ILI9341_SPICLOCK 30000000
-  _SPI_CLOCK_READ = spi_clock_read; //#define ILI9341_SPICLOCK_READ 2000000
+  _width = _screenWidth = width;
+  _height = _screenHeight = height;
+  _SPI_CLOCK = spi_clock;           // #define ST77XX_SPICLOCK 30000000
+  _SPI_MODE = mode;
+  common_init(nullptr); // need to fill this in.
 
+  // Serial.println("_t3n::begin - completed"); Serial.flush();
+  setRotation(0); 
+}
+
+void ST77XX_zephyr_n::common_init(const uint8_t *cmd_list) {
   // Serial.printf("_t3n::begin mosi:%d miso:%d SCLK:%d CS:%d DC:%d SPI clocks:
   // %lu %lu\n", _mosi, _miso, _sclk, _cs, _dc, _SPI_CLOCK, _SPI_CLOCK_READ);
   // Serial.flush();
   if (_pspi == nullptr)
     _pspi = &SPI;
 
+  _colstart  = _rowstart = 0; // May be overridden in init func
+  _ystart = _xstart = 0;
+
+  //printk("Before SPI %p begin\n", _pspi);
   _pspi->begin();
+  //printk("\tAfter\n");
+  // Lets grab hold of the zephyr SPI data.
+
+  uint32_t *p = (uint32_t *)_pspi;
+  _spi_dev = (const struct device *)p[1];
+  memset((void *)&_config16, 0, sizeof(_config16));
+  _config16.frequency = _SPI_CLOCK;
+  _config16.operation = SPI_WORD_SET(16) | SPI_TRANSFER_MSB;
+
 
   pinMode(_cs, OUTPUT);
   digitalWrite(_cs, HIGH);
@@ -1272,44 +1425,12 @@ void ILI9341_GIGA_n::begin(uint32_t spi_clock, uint32_t spi_clock_read) {
     digitalWrite(_rst, HIGH);
     delay(150);
   }
-  /*
-          uint8_t x = readcommand8(ILI9341_RDMODE);
-          Serial.print("\nDisplay Power Mode: 0x"); Serial.println(x, HEX);
-          x = readcommand8(ILI9341_RDMADCTL);
-          Serial.print("\nMADCTL Mode: 0x"); Serial.println(x, HEX);
-          x = readcommand8(ILI9341_RDPIXFMT);
-          Serial.print("\nPixel Format: 0x"); Serial.println(x, HEX);
-          x = readcommand8(ILI9341_RDIMGFMT);
-          Serial.print("\nImage Format: 0x"); Serial.println(x, HEX);
-          x = readcommand8(ILI9341_RDSELFDIAG);
-          Serial.print("\nSelf Diagnostic: 0x"); Serial.println(x, HEX);
-  */
-  beginSPITransaction(_SPI_CLOCK/4);
-  const uint8_t *addr = init_commands;
-  while (1) {
-    uint8_t count = *addr++;
-    if (count-- == 0)
-      break;
-    writecommand_cont(*addr++);
-    while (count-- > 0) {
-      writedata8_cont(*addr++);
-    }
-  }
-  writecommand_last(ILI9341_SLPOUT); // Exit Sleep
-  endSPITransaction();
-  delay(120);
-  beginSPITransaction(_SPI_CLOCK);
-  writecommand_last(ILI9341_DISPON); // Display on
-  endSPITransaction();
 
-#ifdef DEBUG_ASYNC_LEDS
-  pinMode(DEBUG_PIN_1, OUTPUT);
-  pinMode(DEBUG_PIN_2, OUTPUT);
-  pinMode(DEBUG_PIN_3, OUTPUT);
-  pinMode(DEBUG_PIN_4, OUTPUT);
-#endif
-  // Serial.println("_t3n::begin - completed"); Serial.flush();
+  if (cmd_list) commandList(cmd_list);
+
+
 }
+
 
 /*
 This is the core graphics library for all our displays, providing a common
@@ -1348,7 +1469,7 @@ POSSIBILITY OF SUCH DAMAGE.
 extern "C" const unsigned char glcdfont[];
 
 // Draw a circle outline
-void ILI9341_GIGA_n::drawCircle(int16_t x0, int16_t y0, int16_t r,
+void ST77XX_zephyr_n::drawCircle(int16_t x0, int16_t y0, int16_t r,
                              uint16_t color) {
   int16_t f = 1 - r;
   int16_t ddF_x = 1;
@@ -1382,7 +1503,7 @@ void ILI9341_GIGA_n::drawCircle(int16_t x0, int16_t y0, int16_t r,
   }
 }
 
-void ILI9341_GIGA_n::drawCircleHelper(int16_t x0, int16_t y0, int16_t r,
+void ST77XX_zephyr_n::drawCircleHelper(int16_t x0, int16_t y0, int16_t r,
                                    uint8_t cornername, uint16_t color) {
   int16_t f = 1 - r;
   int16_t ddF_x = 1;
@@ -1418,14 +1539,14 @@ void ILI9341_GIGA_n::drawCircleHelper(int16_t x0, int16_t y0, int16_t r,
   }
 }
 
-void ILI9341_GIGA_n::fillCircle(int16_t x0, int16_t y0, int16_t r,
+void ST77XX_zephyr_n::fillCircle(int16_t x0, int16_t y0, int16_t r,
                              uint16_t color) {
   drawFastVLine(x0, y0 - r, 2 * r + 1, color);
   fillCircleHelper(x0, y0, r, 3, 0, color);
 }
 
 // Used to do circles and roundrects
-void ILI9341_GIGA_n::fillCircleHelper(int16_t x0, int16_t y0, int16_t r,
+void ST77XX_zephyr_n::fillCircleHelper(int16_t x0, int16_t y0, int16_t r,
                                    uint8_t cornername, int16_t delta,
                                    uint16_t color) {
 
@@ -1457,7 +1578,7 @@ void ILI9341_GIGA_n::fillCircleHelper(int16_t x0, int16_t y0, int16_t r,
 }
 
 // Bresenham's algorithm - thx wikpedia
-void ILI9341_GIGA_n::drawLine(int16_t x0, int16_t y0, int16_t x1, int16_t y1,
+void ST77XX_zephyr_n::drawLine(int16_t x0, int16_t y0, int16_t x1, int16_t y1,
                            uint16_t color) {
   if (y0 == y1) {
     if (x1 > x0) {
@@ -1479,12 +1600,12 @@ void ILI9341_GIGA_n::drawLine(int16_t x0, int16_t y0, int16_t x1, int16_t y1,
 
   bool steep = abs(y1 - y0) > abs(x1 - x0);
   if (steep) {
-    ILI9341_swap(x0, y0);
-    ILI9341_swap(x1, y1);
+    ST77XX_swap(x0, y0);
+    ST77XX_swap(x1, y1);
   }
   if (x0 > x1) {
-    ILI9341_swap(x0, x1);
-    ILI9341_swap(y0, y1);
+    ST77XX_swap(x0, x1);
+    ST77XX_swap(y0, y1);
   }
 
   int16_t dx, dy;
@@ -1500,7 +1621,7 @@ void ILI9341_GIGA_n::drawLine(int16_t x0, int16_t y0, int16_t x1, int16_t y1,
     ystep = -1;
   }
 
-#ifdef ENABLE_ILI9341_FRAMEBUFFER
+#ifdef ENABLE_ST77XX_FRAMEBUFFER
   if (!_use_fbtft)
     beginSPITransaction(_SPI_CLOCK);
 #else
@@ -1545,21 +1666,21 @@ void ILI9341_GIGA_n::drawLine(int16_t x0, int16_t y0, int16_t x1, int16_t y1,
       HLine(xbegin, y0, x0 - xbegin, color);
     }
   }
-#ifdef ENABLE_ILI9341_FRAMEBUFFER
+#ifdef ENABLE_ST77XX_FRAMEBUFFER
   if (!_use_fbtft) {
-    writecommand_last(ILI9341_NOP);
+    writecommand_last(ST77XX_NOP);
     endSPITransaction();
   }
 #else
-  writecommand_last(ILI9341_NOP);
+  writecommand_last(ST77XX_NOP);
   endSPITransaction();
 #endif
 }
 
 // Draw a rectangle
-void ILI9341_GIGA_n::drawRect(int16_t x, int16_t y, int16_t w, int16_t h,
+void ST77XX_zephyr_n::drawRect(int16_t x, int16_t y, int16_t w, int16_t h,
                            uint16_t color) {
-#ifdef ENABLE_ILI9341_FRAMEBUFFER
+#ifdef ENABLE_ST77XX_FRAMEBUFFER
   if (_use_fbtft) {
     drawFastHLine(x, y, w, color);
     drawFastHLine(x, y + h - 1, w, color);
@@ -1573,13 +1694,13 @@ void ILI9341_GIGA_n::drawRect(int16_t x, int16_t y, int16_t w, int16_t h,
     HLine(x, y + h - 1, w, color);
     VLine(x, y, h, color);
     VLine(x + w - 1, y, h, color);
-    writecommand_last(ILI9341_NOP);
+    writecommand_last(ST77XX_NOP);
     endSPITransaction();
   }
 }
 
 // Draw a rounded rectangle
-void ILI9341_GIGA_n::drawRoundRect(int16_t x, int16_t y, int16_t w, int16_t h,
+void ST77XX_zephyr_n::drawRoundRect(int16_t x, int16_t y, int16_t w, int16_t h,
                                 int16_t r, uint16_t color) {
   // smarter version
   drawFastHLine(x + r, y, w - 2 * r, color);         // Top
@@ -1594,7 +1715,7 @@ void ILI9341_GIGA_n::drawRoundRect(int16_t x, int16_t y, int16_t w, int16_t h,
 }
 
 // Fill a rounded rectangle
-void ILI9341_GIGA_n::fillRoundRect(int16_t x, int16_t y, int16_t w, int16_t h,
+void ST77XX_zephyr_n::fillRoundRect(int16_t x, int16_t y, int16_t w, int16_t h,
                                 int16_t r, uint16_t color) {
   // smarter version
   fillRect(x + r, y, w - 2 * r, h, color);
@@ -1605,7 +1726,7 @@ void ILI9341_GIGA_n::fillRoundRect(int16_t x, int16_t y, int16_t w, int16_t h,
 }
 
 // Draw a triangle
-void ILI9341_GIGA_n::drawTriangle(int16_t x0, int16_t y0, int16_t x1, int16_t y1,
+void ST77XX_zephyr_n::drawTriangle(int16_t x0, int16_t y0, int16_t x1, int16_t y1,
                                int16_t x2, int16_t y2, uint16_t color) {
   drawLine(x0, y0, x1, y1, color);
   drawLine(x1, y1, x2, y2, color);
@@ -1613,23 +1734,23 @@ void ILI9341_GIGA_n::drawTriangle(int16_t x0, int16_t y0, int16_t x1, int16_t y1
 }
 
 // Fill a triangle
-void ILI9341_GIGA_n::fillTriangle(int16_t x0, int16_t y0, int16_t x1, int16_t y1,
+void ST77XX_zephyr_n::fillTriangle(int16_t x0, int16_t y0, int16_t x1, int16_t y1,
                                int16_t x2, int16_t y2, uint16_t color) {
 
   int16_t a, b, y, last;
 
   // Sort coordinates by Y order (y2 >= y1 >= y0)
   if (y0 > y1) {
-    ILI9341_swap(y0, y1);
-    ILI9341_swap(x0, x1);
+    ST77XX_swap(y0, y1);
+    ST77XX_swap(x0, x1);
   }
   if (y1 > y2) {
-    ILI9341_swap(y2, y1);
-    ILI9341_swap(x2, x1);
+    ST77XX_swap(y2, y1);
+    ST77XX_swap(x2, x1);
   }
   if (y0 > y1) {
-    ILI9341_swap(y0, y1);
-    ILI9341_swap(x0, x1);
+    ST77XX_swap(y0, y1);
+    ST77XX_swap(x0, x1);
   }
 
   if (y0 == y2) { // Handle awkward all-on-same-line case as its own thing
@@ -1670,7 +1791,7 @@ void ILI9341_GIGA_n::fillTriangle(int16_t x0, int16_t y0, int16_t x1, int16_t y1
     b = x0 + (x2 - x0) * (y - y0) / (y2 - y0);
     */
     if (a > b)
-      ILI9341_swap(a, b);
+      ST77XX_swap(a, b);
     drawFastHLine(a, y, b - a + 1, color);
   }
 
@@ -1688,12 +1809,12 @@ void ILI9341_GIGA_n::fillTriangle(int16_t x0, int16_t y0, int16_t x1, int16_t y1
     b = x0 + (x2 - x0) * (y - y0) / (y2 - y0);
     */
     if (a > b)
-      ILI9341_swap(a, b);
+      ST77XX_swap(a, b);
     drawFastHLine(a, y, b - a + 1, color);
   }
 }
 
-void ILI9341_GIGA_n::drawBitmap(int16_t x, int16_t y, const uint8_t *bitmap,
+void ST77XX_zephyr_n::drawBitmap(int16_t x, int16_t y, const uint8_t *bitmap,
                              int16_t w, int16_t h, uint16_t color) {
 
   int16_t i, j, byteWidth = (w + 7) / 8;
@@ -1709,9 +1830,11 @@ void ILI9341_GIGA_n::drawBitmap(int16_t x, int16_t y, const uint8_t *bitmap,
 
 // overwrite functions from class Print:
 
-size_t ILI9341_GIGA_n::write(uint8_t c) { return write(&c, 1); }
 
-size_t ILI9341_GIGA_n::write(const uint8_t *buffer, size_t size) {
+size_t ST77XX_zephyr_n::write(uint8_t c) { return write(&c, 1); }
+
+size_t ST77XX_zephyr_n::write(const uint8_t *buffer, size_t size) {
+#ifdef LATER_TEXT
   // Lets try to handle some of the special font centering code that was done
   // for default fonts.
   if (_center_x_text || _center_y_text) {
@@ -1791,11 +1914,13 @@ size_t ILI9341_GIGA_n::write(const uint8_t *buffer, size_t size) {
       }
     }
   }
+#endif
   return size;
 }
 
 // Draw a character
-void ILI9341_GIGA_n::drawChar(int16_t x, int16_t y, unsigned char c,
+#ifdef LATER_TEXT
+void ST77XX_zephyr_n::drawChar(int16_t x, int16_t y, unsigned char c,
                            uint16_t fgcolor, uint16_t bgcolor, uint8_t size_x,
                            uint8_t size_y) {
   if ((x >= _width) ||              // Clip right
@@ -1804,7 +1929,22 @@ void ILI9341_GIGA_n::drawChar(int16_t x, int16_t y, unsigned char c,
       ((y + 8 * size_y - 1) < 0))   // Clip top   TODO: is this correct?
     return;
 
-  //	Serial.printf("drawchar %d %d %c %x %x %d %d\n", x, y, c, fgcolor,
+#if 0
+  static uint8_t debug_count = 50;
+  if (debug_count) {
+    Serial.print("drawchar "); Serial.print(c, HEX);
+    if (c >= ' ' && c <= '~') {
+      Serial.print("("); Serial.write(c); Serial.print(")");
+    }
+    Serial.print(" "); Serial.print(x, DEC);
+    Serial.print(" "); Serial.print(y, DEC);
+    Serial.print(" "); Serial.print(fgcolor, HEX);
+    Serial.print(" "); Serial.print(bgcolor, HEX);
+    Serial.print(" "); Serial.print(size_x, DEC);
+    Serial.print(" "); Serial.println(size_y, DEC);
+    debug_count--;
+  }
+#endif  
   //bgcolor, size_x, size_y);
   if (fgcolor == bgcolor) {
     // This transparent approach is only about 20% faster
@@ -1910,7 +2050,7 @@ void ILI9341_GIGA_n::drawChar(int16_t x, int16_t y, unsigned char c,
          _displayclipy1)) // Clip top   TODO: this is not correct
       return;
 
-#ifdef ENABLE_ILI9341_FRAMEBUFFER
+#ifdef ENABLE_ST77XX_FRAMEBUFFER
     if (_use_fbtft) {
       updateChangedRange(
           x, y, 6 * size_x,
@@ -1974,7 +2114,7 @@ void ILI9341_GIGA_n::drawChar(int16_t x, int16_t y, unsigned char c,
       setAddr(x, y, x + w - 1, y + h - 1);
 
       y = y_char_top; // restore the actual y.
-      writecommand_cont(ILI9341_RAMWR);
+      writecommand_cont(ST77XX_RAMWR);
       for (yc = 0; (yc < 8) && (y < _displayclipy2); yc++) {
         for (yr = 0; (yr < size_y) && (y < _displayclipy2); yr++) {
           x = x_char_start; // get our first x position...
@@ -2003,13 +2143,13 @@ void ILI9341_GIGA_n::drawChar(int16_t x, int16_t y, unsigned char c,
         }
         mask = mask << 1;
       }
-      writecommand_last(ILI9341_NOP);
+      writecommand_last(ST77XX_NOP);
       endSPITransaction();
     }
   }
 }
 
-void ILI9341_GIGA_n::setFont(const ILI9341_t3_font_t &f) {
+void ST77XX_zephyr_n::setFont(const ILI9341_t3_font_t &f) {
   font = &f;
   _gfx_last_char_x_write = 0; // Don't use cached data here
   if (gfxFont) {
@@ -2032,7 +2172,7 @@ void ILI9341_GIGA_n::setFont(const ILI9341_t3_font_t &f) {
 }
 
 // Maybe support GFX Fonts as well?
-void ILI9341_GIGA_n::setFont(const GFXfont *f) {
+void ST77XX_zephyr_n::setFont(const GFXfont *f) {
   font = NULL;                // turn off the other font...
   _gfx_last_char_x_write = 0; // Don't use cached data here
   if (f == gfxFont)
@@ -2135,7 +2275,7 @@ static uint32_t fetchbits_signed(const uint8_t *p, uint32_t index,
   return (int32_t)val;
 }
 
-uint32_t ILI9341_GIGA_n::fetchpixel(const uint8_t *p, uint32_t index, uint32_t x) {
+uint32_t ST77XX_zephyr_n::fetchpixel(const uint8_t *p, uint32_t index, uint32_t x) {
   // The byte
   uint8_t b = p[index >> 3];
   // Shift to LSB position and mask to get value
@@ -2144,7 +2284,7 @@ uint32_t ILI9341_GIGA_n::fetchpixel(const uint8_t *p, uint32_t index, uint32_t x
   return (b >> s) & fontbppmask;
 }
 
-void ILI9341_GIGA_n::drawFontChar(unsigned int c) {
+void ST77XX_zephyr_n::drawFontChar(unsigned int c) {
   uint32_t bitoffset;
   const uint8_t *data;
 
@@ -2358,7 +2498,7 @@ void ILI9341_GIGA_n::drawFontChar(unsigned int c) {
    start_y, end_x, end_y);
                 Serial.printf("  mins (%d %d),\n", start_x_min, start_y_min);
 */
-#ifdef ENABLE_ILI9341_FRAMEBUFFER
+#ifdef ENABLE_ST77XX_FRAMEBUFFER
     if (_use_fbtft) {
       updateChangedRange(
           start_x,
@@ -2522,7 +2662,7 @@ void ILI9341_GIGA_n::drawFontChar(unsigned int c) {
       // output rectangle we are updating... We have already clipped end_x/y,
       // but not yet start_x/y
       setAddr(start_x, start_y_min, end_x, end_y);
-      writecommand_cont(ILI9341_RAMWR);
+      writecommand_cont(ST77XX_RAMWR);
       int screen_y = start_y_min;
       int screen_x;
 
@@ -2662,7 +2802,7 @@ void ILI9341_GIGA_n::drawFontChar(unsigned int c) {
 
 // strPixelLen			- gets pixel length of given ASCII string
 // note, it will exit if end of str or cb has been reached. 
-int16_t ILI9341_GIGA_n::strPixelLen(const char *str, uint16_t cb) {
+int16_t ST77XX_zephyr_n::strPixelLen(const char *str, uint16_t cb) {
   //	//Serial.printf("strPixelLen %s\n", str);
   if (!str)
     return (0);
@@ -2750,7 +2890,7 @@ int16_t ILI9341_GIGA_n::strPixelLen(const char *str, uint16_t cb) {
   return (maxlen);
 }
 
-void ILI9341_GIGA_n::charBounds(char c, int16_t *x, int16_t *y, int16_t *minx,
+void ST77XX_zephyr_n::charBounds(char c, int16_t *x, int16_t *y, int16_t *minx,
                              int16_t *miny, int16_t *maxx, int16_t *maxy) {
 
   // BUGBUG:: Not handling offset/clip
@@ -2881,7 +3021,7 @@ void ILI9341_GIGA_n::charBounds(char c, int16_t *x, int16_t *y, int16_t *minx,
 }
 
 // Add in Adafruit versions of text bounds calculations.
-void ILI9341_GIGA_n::getTextBounds(const uint8_t *buffer, uint16_t len, int16_t x,
+void ST77XX_zephyr_n::getTextBounds(const uint8_t *buffer, uint16_t len, int16_t x,
                                 int16_t y, int16_t *x1, int16_t *y1,
                                 uint16_t *w, uint16_t *h) {
   *x1 = x;
@@ -2907,7 +3047,7 @@ void ILI9341_GIGA_n::getTextBounds(const uint8_t *buffer, uint16_t len, int16_t 
   //Serial.printf("GTB %d %d %d %d\n", *x1, *y1, *w, *h);
 }
 
-void ILI9341_GIGA_n::getTextBounds(const char *str, int16_t x, int16_t y,
+void ST77XX_zephyr_n::getTextBounds(const char *str, int16_t x, int16_t y,
                                 int16_t *x1, int16_t *y1, uint16_t *w,
                                 uint16_t *h) {
   uint8_t c; // Current character
@@ -2934,7 +3074,7 @@ void ILI9341_GIGA_n::getTextBounds(const char *str, int16_t x, int16_t y,
   //Serial.printf("GTB %d %d %u %u\n", *x1, *y1, *w, *h);
 }
 
-void ILI9341_GIGA_n::getTextBounds(const String &str, int16_t x, int16_t y,
+void ST77XX_zephyr_n::getTextBounds(const String &str, int16_t x, int16_t y,
                                 int16_t *x1, int16_t *y1, uint16_t *w,
                                 uint16_t *h) {
   if (str.length() != 0) {
@@ -2942,7 +3082,7 @@ void ILI9341_GIGA_n::getTextBounds(const String &str, int16_t x, int16_t y,
   }
 }
 
-uint16_t ILI9341_GIGA_n::measureTextWidth(const uint8_t* text, int n) {
+uint16_t ST77XX_zephyr_n::measureTextWidth(const uint8_t* text, int n) {
   int16_t x1, y1;
   uint16_t w, h;
   if (n == 0)  n = strlen((const char *)text);
@@ -2950,7 +3090,7 @@ uint16_t ILI9341_GIGA_n::measureTextWidth(const uint8_t* text, int n) {
   return w;
 }
 
-uint16_t ILI9341_GIGA_n::measureTextHeight(const uint8_t* text, int n) {
+uint16_t ST77XX_zephyr_n::measureTextHeight(const uint8_t* text, int n) {
   int16_t x1, y1;
   uint16_t w, h;
   if (n == 0)  n = strlen((const char *)text);
@@ -2959,7 +3099,7 @@ uint16_t ILI9341_GIGA_n::measureTextHeight(const uint8_t* text, int n) {
 }
 
 
-void ILI9341_GIGA_n::drawFontPixel(uint8_t alpha, uint32_t x, uint32_t y) {
+void ST77XX_zephyr_n::drawFontPixel(uint8_t alpha, uint32_t x, uint32_t y) {
   // Adjust alpha based on the number of alpha levels supported by the font
   // (based on bpp)
   // Note: Implemented look-up table for alpha, but made absolutely no
@@ -2972,7 +3112,7 @@ void ILI9341_GIGA_n::drawFontPixel(uint8_t alpha, uint32_t x, uint32_t y) {
   Pixel(x, y, (uint16_t)((result >> 16) | result));
 }
 
-void ILI9341_GIGA_n::drawFontBits(bool opaque, uint32_t bits, uint32_t numbits,
+void ST77XX_zephyr_n::drawFontBits(bool opaque, uint32_t bits, uint32_t numbits,
                                int32_t x, int32_t y, uint32_t repeat) {
   if (bits == 0) {
     if (opaque) {
@@ -3019,7 +3159,7 @@ void ILI9341_GIGA_n::drawFontBits(bool opaque, uint32_t bits, uint32_t numbits,
   }
 }
 
-void ILI9341_GIGA_n::drawGFXFontChar(unsigned int c) {
+void ST77XX_zephyr_n::drawGFXFontChar(unsigned int c) {
   // Lets do Adafruit GFX character output here as well
   if (c == '\r')
     return;
@@ -3177,7 +3317,7 @@ void ILI9341_GIGA_n::drawGFXFontChar(unsigned int c) {
     if (_gfx_last_cursor_y != (cursor_y + _originy))
       _gfx_last_char_x_write = 0;
 
-#ifdef ENABLE_ILI9341_FRAMEBUFFER
+#ifdef ENABLE_ST77XX_FRAMEBUFFER
     if (_use_fbtft) {
       // lets try to output the values directly...
       updateChangedRange(
@@ -3287,7 +3427,7 @@ void ILI9341_GIGA_n::drawGFXFontChar(unsigned int c) {
       setAddr((x_start >= _displayclipx1) ? x_start : _displayclipx1,
               (y_start >= _displayclipy1) ? y_start : _displayclipy1, x_end - 1,
               y_end - 1);
-      writecommand_cont(ILI9341_RAMWR);
+      writecommand_cont(ST77XX_RAMWR);
       // Serial.printf("SetAddr: %u %u %u %u\n", (x_start >= _displayclipx1) ?
       // x_start : _displayclipx1,
       //		(y_start >= _displayclipy1) ? y_start : _displayclipy1,
@@ -3383,7 +3523,7 @@ void ILI9341_GIGA_n::drawGFXFontChar(unsigned int c) {
         }
         y++;
       }
-      writecommand_last(ILI9341_NOP);
+      writecommand_last(ST77XX_NOP);
       endSPITransaction();
     }
     // Save away info about this last char
@@ -3406,7 +3546,7 @@ void ILI9341_GIGA_n::drawGFXFontChar(unsigned int c) {
 //	int16_t   _gfx_last_cursor_x, _gfx_last_cursor_y;
 //	int16_t	 _gfx_last_x_overlap = 0;
 
-bool ILI9341_GIGA_n::gfxFontLastCharPosFG(int16_t x, int16_t y) {
+bool ST77XX_zephyr_n::gfxFontLastCharPosFG(int16_t x, int16_t y) {
   GFXglyph *glyph = gfxFont->glyph + (_gfx_c_last - gfxFont->first);
 
   uint8_t w = glyph->width, h = glyph->height;
@@ -3433,14 +3573,14 @@ bool ILI9341_GIGA_n::gfxFontLastCharPosFG(int16_t x, int16_t y) {
           (0x80 >> (pixel_bit_offset & 0x7)));
 }
 
-void ILI9341_GIGA_n::setCursor(int16_t x, int16_t y, bool autoCenter) {
+void ST77XX_zephyr_n::setCursor(int16_t x, int16_t y, bool autoCenter) {
   _center_x_text = autoCenter; // remember the state.
   _center_y_text = autoCenter; // remember the state.
-  if (x == ILI9341_GIGA_n::CENTER) {
+  if (x == ST77XX_zephyr_n::CENTER) {
     _center_x_text = true;
     x = _width / 2;
   }
-  if (y == ILI9341_GIGA_n::CENTER) {
+  if (y == ST77XX_zephyr_n::CENTER) {
     _center_y_text = true;
     y = _height / 2;
   }
@@ -3464,28 +3604,28 @@ void ILI9341_GIGA_n::setCursor(int16_t x, int16_t y, bool autoCenter) {
   _gfx_last_char_x_write = 0; // Don't use cached data here
 }
 
-void ILI9341_GIGA_n::getCursor(int16_t *x, int16_t *y) {
+void ST77XX_zephyr_n::getCursor(int16_t *x, int16_t *y) {
   *x = cursor_x;
   *y = cursor_y;
 }
 
-void ILI9341_GIGA_n::setTextSize(uint8_t s_x, uint8_t s_y) {
+void ST77XX_zephyr_n::setTextSize(uint8_t s_x, uint8_t s_y) {
   textsize_x = (s_x > 0) ? s_x : 1;
   textsize_y = (s_y > 0) ? s_y : 1;
   _gfx_last_char_x_write = 0; // Don't use cached data here
 }
 
-uint8_t ILI9341_GIGA_n::getTextSize() {
+uint8_t ST77XX_zephyr_n::getTextSize() {
   return textsize_x; // BUGBUG:: two values now...
 }
 
-void ILI9341_GIGA_n::setTextColor(uint16_t c) {
+void ST77XX_zephyr_n::setTextColor(uint16_t c) {
   // For 'transparent' background, we'll set the bg
   // to the same as fg instead of using a flag
   textcolor = textbgcolor = c;
 }
 
-void ILI9341_GIGA_n::setTextColor(uint16_t c, uint16_t b) {
+void ST77XX_zephyr_n::setTextColor(uint16_t c, uint16_t b) {
   textcolor = c;
   textbgcolor = b;
   // pre-expand colors for fast alpha-blending later
@@ -3495,21 +3635,21 @@ void ILI9341_GIGA_n::setTextColor(uint16_t c, uint16_t b) {
       (textbgcolor | (textbgcolor << 16)) & 0b00000111111000001111100000011111;
 }
 
-void ILI9341_GIGA_n::setTextWrap(boolean w) { wrap = w; }
+void ST77XX_zephyr_n::setTextWrap(boolean w) { wrap = w; }
 
-boolean ILI9341_GIGA_n::getTextWrap() { return wrap; }
+boolean ST77XX_zephyr_n::getTextWrap() { return wrap; }
 
-uint8_t ILI9341_GIGA_n::getRotation(void) { return rotation; }
+uint8_t ST77XX_zephyr_n::getRotation(void) { return _rotation; }
 
-void ILI9341_GIGA_n::sleep(bool enable) {
+void ST77XX_zephyr_n::sleep(bool enable) {
   beginSPITransaction(_SPI_CLOCK);
   if (enable) {
-    writecommand_cont(ILI9341_DISPOFF);
-    writecommand_last(ILI9341_SLPIN);
+    writecommand_cont(ST77XX_DISPOFF);
+    writecommand_last(ST77XX_SLPIN);
     endSPITransaction();
   } else {
-    writecommand_cont(ILI9341_DISPON);
-    writecommand_last(ILI9341_SLPOUT);
+    writecommand_cont(ST77XX_DISPON);
+    writecommand_last(ST77XX_SLPOUT);
     endSPITransaction();
     delay(5);
   }
@@ -3519,19 +3659,19 @@ void ILI9341_GIGA_n::sleep(bool enable) {
 ** Function name:           setTextDatum
 ** Description:             Set the text position reference datum
 ***************************************************************************************/
-void ILI9341_GIGA_n::setTextDatum(uint8_t d) { textdatum = d; }
+void ST77XX_zephyr_n::setTextDatum(uint8_t d) { textdatum = d; }
 
 /***************************************************************************************
 ** Function name:           drawNumber
 ** Description:             draw a long integer
 ***************************************************************************************/
-int16_t ILI9341_GIGA_n::drawNumber(long long_num, int poX, int poY) {
+int16_t ST77XX_zephyr_n::drawNumber(long long_num, int poX, int poY) {
   char str[14];
   ltoa(long_num, str, 10);
   return drawString(str, poX, poY);
 }
 
-int16_t ILI9341_GIGA_n::drawFloat(float floatNumber, int dp, int poX, int poY) {
+int16_t ST77XX_zephyr_n::drawFloat(float floatNumber, int dp, int poX, int poY) {
   char str[14];         // Array to contain decimal string
   uint8_t ptr = 0;      // Initialise pointer for array
   int8_t digits = 1;    // Count the digits to avoid array overflow
@@ -3555,7 +3695,7 @@ int16_t ILI9341_GIGA_n::drawFloat(float floatNumber, int dp, int poX, int poY) {
 
   floatNumber += rounding; // Round up or down
 
-  // For error put ... in string and return (all TFT_ILI9341_ESP library fonts
+  // For error put ... in string and return (all TFT_ST77XX_ESP library fonts
   // contain . character)
   if (floatNumber >= 2147483647) {
     strcpy(str, "...");
@@ -3607,14 +3747,14 @@ int16_t ILI9341_GIGA_n::drawFloat(float floatNumber, int dp, int poX, int poY) {
 ** Description :            draw string with padding if it is defined
 ***************************************************************************************/
 // Without font number, uses font set by setTextFont()
-int16_t ILI9341_GIGA_n::drawString(const String &string, int poX, int poY) {
+int16_t ST77XX_zephyr_n::drawString(const String &string, int poX, int poY) {
   int16_t len = string.length() + 2;
   char buffer[80];  // should never get this big..
   string.toCharArray(buffer, len);
   return drawString(buffer, len-2, poX, poY);
 }
 
-int16_t ILI9341_GIGA_n::drawString(const char string[], int16_t len, int poX, int poY) {
+int16_t ST77XX_zephyr_n::drawString(const char string[], int16_t len, int poX, int poY) {
   int16_t sumX = 0;
   uint8_t padding = 1 /*, baseline = 0*/;
 
@@ -3702,7 +3842,7 @@ int16_t ILI9341_GIGA_n::drawString(const char string[], int16_t len, int poX, in
   return sumX;
 }
 
-void ILI9341_GIGA_n::scrollTextArea(uint8_t scrollSize) {
+void ST77XX_zephyr_n::scrollTextArea(uint8_t scrollSize) {
   uint16_t awColors[scroll_width];
   for (int y = scroll_y + scrollSize; y < (scroll_y + scroll_height); y++) {
     readRect(scroll_x, y, scroll_width, 1, awColors);
@@ -3712,7 +3852,7 @@ void ILI9341_GIGA_n::scrollTextArea(uint8_t scrollSize) {
            scrollSize, scrollbgcolor);
 }
 
-void ILI9341_GIGA_n::setScrollTextArea(int16_t x, int16_t y, int16_t w,
+void ST77XX_zephyr_n::setScrollTextArea(int16_t x, int16_t y, int16_t w,
                                     int16_t h) {
   scroll_x = x;
   scroll_y = y;
@@ -3720,38 +3860,38 @@ void ILI9341_GIGA_n::setScrollTextArea(int16_t x, int16_t y, int16_t w,
   scroll_height = h;
 }
 
-void ILI9341_GIGA_n::setScrollBackgroundColor(uint16_t color) {
+void ST77XX_zephyr_n::setScrollBackgroundColor(uint16_t color) {
   scrollbgcolor = color;
   fillRect(scroll_x, scroll_y, scroll_width, scroll_height, scrollbgcolor);
 }
 
-void ILI9341_GIGA_n::enableScroll(void) { scrollEnable = true; }
+void ST77XX_zephyr_n::enableScroll(void) { scrollEnable = true; }
 
-void ILI9341_GIGA_n::disableScroll(void) { scrollEnable = false; }
+void ST77XX_zephyr_n::disableScroll(void) { scrollEnable = false; }
 
-void ILI9341_GIGA_n::resetScrollBackgroundColor(uint16_t color) {
+void ST77XX_zephyr_n::resetScrollBackgroundColor(uint16_t color) {
   scrollbgcolor = color;
 }
-
+#endif //LATER TEXT
 
 
 //=======================================================================
 // Add optinal support for using frame buffer to speed up complex outputs
 //=======================================================================
-void ILI9341_GIGA_n::setFrameBuffer(uint16_t *frame_buffer) {
-#ifdef ENABLE_ILI9341_FRAMEBUFFER
+void ST77XX_zephyr_n::setFrameBuffer(uint16_t *frame_buffer) {
+#ifdef ENABLE_ST77XX_FRAMEBUFFER
   _pfbtft = frame_buffer;
-  _dma_state &= ~ILI9341_DMA_INIT; // clear that we init the dma chain as our
+ // _dma_state &= ~ST77XX_DMA_INIT; // clear that we init the dma chain as our
                                    // buffer has changed...
 
 #endif
 }
 
 
-uint8_t ILI9341_GIGA_n::useFrameBuffer(
+uint8_t ST77XX_zephyr_n::useFrameBuffer(
     boolean b) // use the frame buffer?  First call will allocate
 {
-#ifdef ENABLE_ILI9341_FRAMEBUFFER
+#ifdef ENABLE_ST77XX_FRAMEBUFFER
 
   if (b) {
     // First see if we need to allocate buffer
@@ -3763,6 +3903,8 @@ uint8_t ILI9341_GIGA_n::useFrameBuffer(
       _pfbtft = (uint16_t *)(((uintptr_t)_we_allocated_buffer + 32) &
                              ~((uintptr_t)(31)));
       memset(_pfbtft, 0, CBALLOC);
+      Serial.print("Allocated FB: ");
+      Serial.println((uint32_t)_pfbtft, HEX);
     }
     _use_fbtft = 1;
     clearChangedRange(); // make sure the dirty range is updated.
@@ -3775,9 +3917,9 @@ uint8_t ILI9341_GIGA_n::useFrameBuffer(
 #endif
 }
 
-void ILI9341_GIGA_n::freeFrameBuffer(void) // explicit call to release the buffer
+void ST77XX_zephyr_n::freeFrameBuffer(void) // explicit call to release the buffer
 {
-#ifdef ENABLE_ILI9341_FRAMEBUFFER
+#ifdef ENABLE_ST77XX_FRAMEBUFFER
   if (_we_allocated_buffer) {
     free(_we_allocated_buffer);
     _pfbtft = NULL;
@@ -3786,29 +3928,25 @@ void ILI9341_GIGA_n::freeFrameBuffer(void) // explicit call to release the buffe
   }
 #endif
 }
-void ILI9341_GIGA_n::updateScreen(void) // call to say update the screen now.
+void ST77XX_zephyr_n::updateScreen(void) // call to say update the screen now.
 {
 // Not sure if better here to check flag or check existence of buffer.
 // Will go by buffer as maybe can do interesting things?
-#ifdef ENABLE_ILI9341_FRAMEBUFFER
+#ifdef ENABLE_ST77XX_FRAMEBUFFER
   if (_use_fbtft) {
     beginSPITransaction(_SPI_CLOCK);
     if (_standard && !_updateChangedAreasOnly) {
       // Doing full window.
       setAddr(0, 0, _width - 1, _height - 1);
-      writecommand_cont(ILI9341_RAMWR);
+      writecommand_cont(ST77XX_RAMWR);
+      setDataMode();
 
       // BUGBUG doing as one shot.  Not sure if should or not or do like
       // main code and break up into transactions...
-      uint16_t *pfbtft_end =
-          &_pfbtft[(ILI9341_TFTWIDTH * ILI9341_TFTHEIGHT) - 1]; // setup
-      uint16_t *pftbft = _pfbtft;
-
-      // Quick write out the data;
-      while (pftbft < pfbtft_end) {
-        writedata16_cont(*pftbft++);
-      }
-      writedata16_last(*pftbft);
+      // lets call zephyr to do the work
+      struct spi_buf tx_buf = { .buf = _pfbtft, .len = _screenWidth * _screenHeight * 2 };
+      const struct spi_buf_set tx_buf_set = { .buffers = &tx_buf, .count = 1 };
+      spi_transceive(_spi_dev, &_config16, &tx_buf_set, nullptr);
     } else {
       // setup just to output the clip rectangle area anded with updated area if
       // enabled
@@ -3832,7 +3970,7 @@ void ILI9341_GIGA_n::updateScreen(void) // call to say update the screen now.
       // Only do if actual area to update
       if ((start_x <= end_x) && (start_y <= end_y)) {
         setAddr(start_x, start_y, end_x, end_y);
-        writecommand_cont(ILI9341_RAMWR);
+        writecommand_cont(ST77XX_RAMWR);
 
         //if(Serial) Serial.printf("updateScreen (%d %d) (%d %d) (%d %d %d %d)\n", start_x, start_y, end_x, end_y,
         //    _changed_min_x, _changed_min_y, _changed_max_x, _changed_max_y);
@@ -3857,4 +3995,46 @@ void ILI9341_GIGA_n::updateScreen(void) // call to say update the screen now.
   }
   clearChangedRange(); // make sure the dirty range is updated.
 #endif
+}
+
+bool ST77XX_zephyr_n::updateScreenAsync(bool update_cont) {
+  if (update_cont) return false; // not implemented
+  #if defined(CONFIG_SPI_ASYNC) && defined(CONFIG_SPI_STM32_INTERRUPT)
+  #ifdef ENABLE_ST77XX_FRAMEBUFFER
+  if (_use_fbtft) {
+    beginSPITransaction(_SPI_CLOCK);
+    // Doing full window.
+    setAddr(0, 0, _width - 1, _height - 1);
+    writecommand_cont(ST77XX_RAMWR);
+    setDataMode();
+
+    _async_update_active = true;
+    struct spi_buf tx_buf = { .buf = _pfbtft, .len = _screenWidth * _screenHeight * 2 };
+    const struct spi_buf_set tx_buf_set = { .buffers = &tx_buf, .count = 1 };
+    spi_transceive_cb(_spi_dev, &_config16, &tx_buf_set, nullptr, &async_callback, this);
+  }
+  #endif
+  #else
+  Serial.println("updateScreenAsync: CONFIG_SPI_ASYNC and CONFIG_SPI_STM32_INTERRUPT");
+  Serial.println("\tMust be defined in configuration file");
+  return false;
+  #endif  
+  return true;
+}
+void ST77XX_zephyr_n::waitUpdateAsyncComplete(void) {
+  #if defined(CONFIG_SPI_ASYNC) && defined(CONFIG_SPI_STM32_INTERRUPT)
+  while (_async_update_active) {}
+  #endif
+}
+
+boolean ST77XX_zephyr_n::asyncUpdateActive(void) { return _async_update_active; }
+
+void ST77XX_zephyr_n::async_callback(const struct device *dev, int result, void *data) {
+  ((ST77XX_zephyr_n*)data)->process_async_callback();
+
+}
+
+void ST77XX_zephyr_n::process_async_callback(void) {
+  endSPITransaction(); 
+  _async_update_active = false; 
 }
