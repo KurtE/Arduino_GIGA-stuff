@@ -21,27 +21,18 @@ as well as Adafruit raw 1.8" TFT display
   MIT license, all text above must be included in any redistribution
  ****************************************************/
 
-// This Teensy3 native optimized version requires specific pins
-//
-#define TFT_MISO  12
-#define TFT_MOSI  11  //a12
-#define TFT_SCK   13  //a13
-#define TFT_DC   9 
-#define TFT_CS   32  
-#define TFT_RST  31
+#define TFT_DC   4 
+#define TFT_CS   2  
+#define TFT_RST  3
 
-#include <Adafruit_GFX.h>    // Core graphics library
-#include <ST7735_zephyr.h> // Hardware-specific library
-#include <ST7789_zephyr.h> // Hardware-specific library
-#include <ST7796_zephyr.h> // Hardware-specific library
-#include <SPI.h>
+#include <ST77XX_zephyr.h>
 
 //ST77XX_t3 tft = ST77XX_t3(TFT_CS, TFT_DC, TFT_MOSI, TFT_SCLK, TFT_RST);
 // For 1.54" TFT with ST7789
 //ST7789_t3 tft = ST7789_t3(TFT_CS, TFT_DC, TFT_MOSI, TFT_SCLK, TFT_RST);
 //ST7780_t3 tft = ST7789_t3(TFT_CS, TFT_DC, TFT_RST);
 
-ST7796_t3 tft = ST7796_t3(TFT_CS, TFT_DC, TFT_RST);
+ST7796_zephyr tft = ST7796_zephyr(&SPI, TFT_CS, TFT_DC, TFT_RST);
 
 void setup(void) {
   #ifdef SD_CS
@@ -61,8 +52,8 @@ void setup(void) {
   
   // Use this initializer (uncomment) if you're using a 1.54" 240x240 TFT
   //tft.init(240, 240);   // initialize a ST7789 chip, 240x240 pixels
-  tft.init(240, 320);     // ST7789 at 320x240
-  tft.init(320, 480);     // ST7796 at 480x320
+  //tft.init(240, 320);     // ST7789 at 320x240
+  tft.begin(320, 480);     // ST7796 at 480x320
   Serial.println("init");
 
   tft.setTextWrap(false); // Allow text to run off right edge
@@ -85,26 +76,27 @@ void setup(void) {
 }
 
 void loop(void) {
-  rotateLine();
-  rotateText();
-  rotatePixel();
-  rotateFastline();
-  rotateDrawrect();
-  rotateFillrect();
-  rotateDrawcircle();
-  rotateFillcircle();
-  rotateTriangle();
-  rotateFillTriangle();
-  rotateRoundRect();
-  rotateFillRoundRect();
-  rotateChar();
-  rotateString();
+  Serial.println("rotateLine: "); rotateLine();
+  Serial.println("rotateText: "); rotateText();
+  Serial.println("rotatePixel: ");  rotatePixel();
+  Serial.println("rotateFastline: "); rotateFastline();
+  Serial.println("rotateDrawrect: "); rotateDrawrect();
+  Serial.println("rotateFillrect: "); rotateFillrect();
+  Serial.println("rotateDrawcircle: "); rotateDrawcircle();
+  Serial.println("rotateFillcircle: "); rotateFillcircle();
+  Serial.println("rotateTriangle: "); rotateTriangle();
+  Serial.println("rotateFillTriangle: "); rotateFillTriangle();
+  Serial.println("rotateRoundRect: ");  rotateRoundRect();
+  Serial.println("rotateFillRoundRect: ");  rotateFillRoundRect();
+  Serial.println("rotateChar: "); rotateChar();
+  Serial.println("rotateString: "); rotateString();
 }
 
 void rotateText() {
   for (uint8_t i=0; i<4; i++) {
     tft.fillScreen(ST77XX_BLACK);
     Serial.println(tft.getRotation(), DEC);
+
 
     tft.setCursor(0, 30);
     tft.setTextColor(ST77XX_RED);
@@ -127,7 +119,7 @@ void rotateText() {
 }
 
 void rotateFillcircle(void) {
-  for (uint8_t i=0; i<4; i++) {
+    for (uint8_t i=0; i<4; i++) {
     tft.fillScreen(ST77XX_BLACK);
     Serial.println(tft.getRotation(), DEC);
 

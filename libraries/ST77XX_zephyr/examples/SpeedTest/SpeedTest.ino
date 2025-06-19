@@ -23,7 +23,7 @@ float pi = 3.1415926f;
 
 void testlines(uint16_t color)
 {
-	disp.fillScreen(ST7735_BLACK);
+	disp.fillScreen(ST77XX_BLACK);
 
 	for (int16_t x=0; x < disp.width(); x+=6)
 		disp.drawLine(0, 0, x, disp.height()-1, color);
@@ -60,7 +60,7 @@ void testdrawtext(const char *text, uint16_t color, uint16_t bgcolor)
 
 void testfastlines(uint16_t color1, uint16_t color2)
 {
-	disp.fillScreen(ST7735_BLACK);
+	disp.fillScreen(ST77XX_BLACK);
 
 	for (int16_t y=0; y < disp.height(); y+=5)
 		disp.drawFastHLine(0, y, disp.width(), color1);
@@ -71,7 +71,7 @@ void testfastlines(uint16_t color1, uint16_t color2)
 
 void testdrawrects(uint16_t color)
 {
-	disp.fillScreen(ST7735_BLACK);
+	disp.fillScreen(ST77XX_BLACK);
 
 	for (int16_t x=0; x < disp.width(); x+=6)
 		disp.drawRect(disp.width()/2 -x/2, disp.height()/2 -x/2 , x, x, color);
@@ -79,7 +79,7 @@ void testdrawrects(uint16_t color)
 
 void testfillrects(uint16_t color1, uint16_t color2)
 {
-	disp.fillScreen(ST7735_BLACK);
+	disp.fillScreen(ST77XX_BLACK);
 
 	for (int16_t x=disp.width()-1; x > 6; x-=6) {
 		disp.fillRect(disp.width()/2 -x/2, disp.height()/2 -x/2 , x, x, color1);
@@ -103,7 +103,7 @@ void testdrawcircles(uint8_t radius, uint16_t color)
 
 void testtriangles()
 {
-	disp.fillScreen(ST7735_BLACK);
+	disp.fillScreen(ST77XX_BLACK);
 
 	int color = 0xF800;
 	int t;
@@ -123,7 +123,7 @@ void testtriangles()
 
 void testroundrects()
 {
-	disp.fillScreen(ST7735_BLACK);
+	disp.fillScreen(ST77XX_BLACK);
 
 	int color = 100;
 	int i;
@@ -146,68 +146,68 @@ void testroundrects()
 	}
 }
 
-#define SETCOLOR(c) disp.setTextColor(c, bg ? ST7735_BLACK : c);
+#define SETCOLOR(c) disp.setTextColor(c, bg ? ST77XX_BLACK : c);
 
 void tftPrintTest(bool bg)
 {
 	disp.setTextWrap(false);
-	disp.fillScreen(ST7735_BLACK);
+	disp.fillScreen(ST77XX_BLACK);
 	disp.setCursor(0, 30);
-	SETCOLOR(ST7735_RED);
+	SETCOLOR(ST77XX_RED);
 	disp.setTextSize(1);
 	disp.println("Hello World!");
-	SETCOLOR(ST7735_YELLOW);
+	SETCOLOR(ST77XX_YELLOW);
 	disp.setTextSize(2);
 	disp.println("Hello World!");
-	SETCOLOR(ST7735_GREEN);
+	SETCOLOR(ST77XX_GREEN);
 	disp.setTextSize(3);
 	disp.println("Hello World!");
-	SETCOLOR(ST7735_BLUE);
+	SETCOLOR(ST77XX_BLUE);
 	disp.setTextSize(4);
 	disp.print(1234.567);
 
 	disp.setCursor(0, 0);
-	disp.fillScreen(ST7735_BLACK);
-	SETCOLOR(ST7735_WHITE);
+	disp.fillScreen(ST77XX_BLACK);
+	SETCOLOR(ST77XX_WHITE);
 	disp.setTextSize(0);
 	disp.println("Hello World!");
 	disp.setTextSize(1);
-	SETCOLOR(ST7735_GREEN);
+	SETCOLOR(ST77XX_GREEN);
 	disp.print(pi, 6);
 	disp.println(" Want pi?");
 	disp.println(" ");
 	disp.print(8675309, HEX);
 	disp.println(" Print HEX!");
 	disp.println(" ");
-	SETCOLOR(ST7735_WHITE);
+	SETCOLOR(ST77XX_WHITE);
 	disp.println("Sketch has been");
 	disp.println("running for: ");
-	SETCOLOR(ST7735_MAGENTA);
+	SETCOLOR(ST77XX_MAGENTA);
 	disp.print(millis() / 1000);
-	SETCOLOR(ST7735_WHITE);
+	SETCOLOR(ST77XX_WHITE);
 	disp.print(" seconds.");
 }
 
 void mediabuttons()
 {
 	// play
-	disp.fillScreen(ST7735_BLACK);
-	disp.fillRoundRect(25, 10, 78, 60, 8, ST7735_WHITE);
-	disp.fillTriangle(42, 20, 42, 60, 90, 40, ST7735_RED);
+	disp.fillScreen(ST77XX_BLACK);
+	disp.fillRoundRect(25, 10, 78, 60, 8, ST77XX_WHITE);
+	disp.fillTriangle(42, 20, 42, 60, 90, 40, ST77XX_RED);
 
 	// pause
-	disp.fillRoundRect(25, 90, 78, 60, 8, ST7735_WHITE);
-	disp.fillRoundRect(39, 98, 20, 45, 5, ST7735_GREEN);
-	disp.fillRoundRect(69, 98, 20, 45, 5, ST7735_GREEN);
+	disp.fillRoundRect(25, 90, 78, 60, 8, ST77XX_WHITE);
+	disp.fillRoundRect(39, 98, 20, 45, 5, ST77XX_GREEN);
+	disp.fillRoundRect(69, 98, 20, 45, 5, ST77XX_GREEN);
 
 	// play color
-	disp.fillTriangle(42, 20, 42, 60, 90, 40, ST7735_BLUE);
+	disp.fillTriangle(42, 20, 42, 60, 90, 40, ST77XX_BLUE);
 
 	// pause color
-	disp.fillRoundRect(39, 98, 20, 45, 5, ST7735_RED);
-	disp.fillRoundRect(69, 98, 20, 45, 5, ST7735_RED);
+	disp.fillRoundRect(39, 98, 20, 45, 5, ST77XX_RED);
+	disp.fillRoundRect(69, 98, 20, 45, 5, ST77XX_RED);
 	// play color
-	disp.fillTriangle(42, 20, 42, 60, 90, 40, ST7735_GREEN);
+	disp.fillTriangle(42, 20, 42, 60, 90, 40, ST77XX_GREEN);
 }
 
 int t[20];
@@ -230,29 +230,29 @@ void setup()
 	disp.fillScreen(RGB(0,0,0));
 
 	t[n++] = millis();
-	disp.fillScreen(ST7735_BLACK);
+	disp.fillScreen(ST77XX_BLACK);
 	t[n++] = millis();
-	testdrawtext("Lorem ipsum dolor sit amet, consectetur adipiscing elit. Curabitur adipiscing ante sed nibh tincidunt feugiat. Maecenas enim massa, fringilla sed malesuada et, malesuada sit amet turpis. Sed porttitor neque ut ante pretium vitae malesuada nunc bibendum. Nullam aliquet ultrices massa eu hendrerit. Ut sed nisi lorem. In vestibulum purus a tortor imperdiet posuere. ", ST7735_WHITE, ST7735_WHITE);
+	testdrawtext("Lorem ipsum dolor sit amet, consectetur adipiscing elit. Curabitur adipiscing ante sed nibh tincidunt feugiat. Maecenas enim massa, fringilla sed malesuada et, malesuada sit amet turpis. Sed porttitor neque ut ante pretium vitae malesuada nunc bibendum. Nullam aliquet ultrices massa eu hendrerit. Ut sed nisi lorem. In vestibulum purus a tortor imperdiet posuere. ", ST77XX_WHITE, ST77XX_WHITE);
 	t[n++] = millis();
 	tftPrintTest(false);
 	t[n++] = millis();
-	testdrawtext("Lorem ipsum dolor sit amet, consectetur adipiscing elit. Curabitur adipiscing ante sed nibh tincidunt feugiat. Maecenas enim massa, fringilla sed malesuada et, malesuada sit amet turpis. Sed porttitor neque ut ante pretium vitae malesuada nunc bibendum. Nullam aliquet ultrices massa eu hendrerit. Ut sed nisi lorem. In vestibulum purus a tortor imperdiet posuere. ", ST7735_WHITE, ST7735_BLACK);
+	testdrawtext("Lorem ipsum dolor sit amet, consectetur adipiscing elit. Curabitur adipiscing ante sed nibh tincidunt feugiat. Maecenas enim massa, fringilla sed malesuada et, malesuada sit amet turpis. Sed porttitor neque ut ante pretium vitae malesuada nunc bibendum. Nullam aliquet ultrices massa eu hendrerit. Ut sed nisi lorem. In vestibulum purus a tortor imperdiet posuere. ", ST77XX_WHITE, ST77XX_BLACK);
 	t[n++] = millis();
 	tftPrintTest(true);
 	t[n++] = millis();
-	testlines(ST7735_YELLOW);
+	testlines(ST77XX_YELLOW);
 	t[n++] = millis();
-	testfastlines(ST7735_RED, ST7735_BLUE);
+	testfastlines(ST77XX_RED, ST77XX_BLUE);
 	t[n++] = millis();
-	testdrawrects(ST7735_GREEN);
+	testdrawrects(ST77XX_GREEN);
 	t[n++] = millis();
-	testfillrects(ST7735_YELLOW, ST7735_MAGENTA);
+	testfillrects(ST77XX_YELLOW, ST77XX_MAGENTA);
 	t[n++] = millis();
-	disp.fillScreen(ST7735_BLACK);
+	disp.fillScreen(ST77XX_BLACK);
 	t[n++] = millis();
-	testfillcircles(10, ST7735_BLUE);
+	testfillcircles(10, ST77XX_BLUE);
 	t[n++] = millis();
-	testdrawcircles(10, ST7735_WHITE);
+	testdrawcircles(10, ST77XX_WHITE);
 	t[n++] = millis();
 	testroundrects();
 	t[n++] = millis();

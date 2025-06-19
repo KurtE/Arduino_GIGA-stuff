@@ -301,7 +301,7 @@ public:
                 uint16_t bg, uint8_t size_x, uint8_t size_y);
   void inline drawChar(int16_t x, int16_t y, unsigned char c, uint16_t color,
                        uint16_t bg, uint8_t size) {
-    drawChar(x, y, c, color, bg, size);
+    drawChar(x, y, c, color, bg, size, size);
   }
   #ifndef CENTER
   static const int16_t CENTER = 9998;
@@ -854,7 +854,13 @@ class ST7796_zephyr : public ST77XX_zephyr_n  {
 public:
   ST7796_zephyr(SPIClass *pspi, uint8_t CS, uint8_t DC, uint8_t RST = 255); 
 
+  // Allow either init or begin
   void  begin(uint16_t width=320, uint16_t height=480, uint8_t mode=SPI_MODE0, uint32_t spi_clock = ST77XX_SPICLOCK);
+
+  void  init(uint16_t width=320, uint16_t height=480, uint8_t mode=SPI_MODE0, uint32_t spi_clock = ST77XX_SPICLOCK) {
+      begin(width, height, mode, spi_clock);
+  }
+
   virtual void  setRotation(uint8_t m);
 
 };
@@ -864,6 +870,9 @@ public:
   ST7789_zephyr(SPIClass *pspi, uint8_t CS, uint8_t DC, uint8_t RST = 255); 
 
   void  begin(uint16_t width=240, uint16_t height=240, uint8_t mode=SPI_MODE0, uint32_t spi_clock = ST77XX_SPICLOCK);
+  void  init(uint16_t width=240, uint16_t height=240, uint8_t mode=SPI_MODE0, uint32_t spi_clock = ST77XX_SPICLOCK) {
+      begin(width, height, mode, spi_clock);
+  }
   virtual void  setRotation(uint8_t m);
 
 };

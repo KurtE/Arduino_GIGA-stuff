@@ -217,7 +217,7 @@ void setup()
   //tft.init(240,320) ;     // use for ST7789 (newer 2')
   //tft.init(240,240, SPI_MODE2) ;  // use for ST7789 without CS)
 
-  tft.fillScreen(ST7735_BLACK);
+  tft.fillScreen(ST77XX_BLACK);
 #ifdef USE_FRAME_BUFFER
   if(!tft.useFrameBuffer(true)) { // lets try using a frame buffer.
     Serial.println("TFT failed to create Frame buffer");
@@ -236,7 +236,7 @@ void setup()
   //tft1.init(240,320) ;     // use for ST7789 (newer 2')
   //tft1.init(240,240, SPI_MODE2) ;  // use for ST7789 without CS)
 
-  tft1.fillScreen(ST7735_BLACK);
+  tft1.fillScreen(ST77XX_BLACK);
 #ifdef USE_FRAME_BUFFER
   if (!tft1.useFrameBuffer(true)) { // lets try using a frame buffer.
     Serial.println("TFT1 failed to create Frame buffer");
@@ -256,7 +256,7 @@ void setup()
   //tft2.init(240,320) ;     // use for ST7789 (newer 2')
   //tft2.init(240,240, SPI_MODE2) ;  // use for ST7789 without CS)
 
-  tft2.fillScreen(ST7735_BLACK);
+  tft2.fillScreen(ST77XX_BLACK);
 #ifdef USE_FRAME_BUFFER
   if (!tft2.useFrameBuffer(true)) { // lets try using a frame buffer.
     Serial.println("TFT2 failed to create Frame buffer");
@@ -296,19 +296,19 @@ void loop()
       switch (tft_which_test[i])
       {
         case 0:
-          testlines(tfts[i], ST7735_YELLOW);
+          testlines(tfts[i], ST77XX_YELLOW);
           break;
         case 1:
-          testfastlines(tfts[i], ST7735_RED, ST7735_BLUE);
+          testfastlines(tfts[i], ST77XX_RED, ST77XX_BLUE);
           break;
         case 2:
-            testdrawrects(tfts[i], ST7735_GREEN);
+            testdrawrects(tfts[i], ST77XX_GREEN);
             break;
         case 3:
-            testfillrects(tfts[i], ST7735_YELLOW, ST7735_MAGENTA);
+            testfillrects(tfts[i], ST77XX_YELLOW, ST77XX_MAGENTA);
             break;
         case 4:
-            testcircles(tfts[i], 10, ST7735_BLUE);
+            testcircles(tfts[i], 10, ST77XX_BLUE);
             break;
         case 5:
             testroundrects(tfts[i]);
@@ -333,7 +333,7 @@ void loop()
 // Test functions
 //=============================================================================
 void testlines(ST7735_t3 *_ptft, uint16_t color) {
-  _ptft->fillScreen(ST7735_BLACK);
+  _ptft->fillScreen(ST77XX_BLACK);
   for (int16_t x=0; x < _ptft->width(); x+=6) {
     _ptft->drawLine(0, 0, x, _ptft->height()-1, color);
   }
@@ -341,7 +341,7 @@ void testlines(ST7735_t3 *_ptft, uint16_t color) {
     _ptft->drawLine(0, 0, _ptft->width()-1, y, color);
   }
 
-  _ptft->fillScreen(ST7735_BLACK);
+  _ptft->fillScreen(ST77XX_BLACK);
   for (int16_t x=0; x < _ptft->width(); x+=6) {
     _ptft->drawLine(_ptft->width()-1, 0, x, _ptft->height()-1, color);
   }
@@ -349,7 +349,7 @@ void testlines(ST7735_t3 *_ptft, uint16_t color) {
     _ptft->drawLine(_ptft->width()-1, 0, 0, y, color);
   }
 
-  _ptft->fillScreen(ST7735_BLACK);
+  _ptft->fillScreen(ST77XX_BLACK);
   for (int16_t x=0; x < _ptft->width(); x+=6) {
     _ptft->drawLine(0, _ptft->height()-1, x, 0, color);
   }
@@ -357,7 +357,7 @@ void testlines(ST7735_t3 *_ptft, uint16_t color) {
     _ptft->drawLine(0, _ptft->height()-1, _ptft->width()-1, y, color);
   }
 
-  _ptft->fillScreen(ST7735_BLACK);
+  _ptft->fillScreen(ST77XX_BLACK);
   for (int16_t x=0; x < _ptft->width(); x+=6) {
     _ptft->drawLine(_ptft->width()-1, _ptft->height()-1, x, 0, color);
   }
@@ -376,7 +376,7 @@ void testdrawtext(ST7735_t3 *_ptft, const char *text, uint16_t color) {
 }
 
 void testfastlines(ST7735_t3 *_ptft, uint16_t color1, uint16_t color2) {
-  _ptft->fillScreen(ST7735_BLACK);
+  _ptft->fillScreen(ST77XX_BLACK);
   for (int16_t y = 0; y < _ptft->height(); y += 5) {
     _ptft->drawFastHLine(0, y, _ptft->width(), color1);
   }
@@ -387,7 +387,7 @@ void testfastlines(ST7735_t3 *_ptft, uint16_t color1, uint16_t color2) {
 }
 
 void testdrawrects(ST7735_t3 *_ptft, uint16_t color) {
-  _ptft->fillScreen(ST7735_BLACK);
+  _ptft->fillScreen(ST77XX_BLACK);
   for (int16_t x = 0; x < _ptft->width(); x += 6) {
     _ptft->drawRect(_ptft->width() / 2 - x / 2, _ptft->height() / 2 - x / 2 , x, x, color);
   }
@@ -395,7 +395,7 @@ void testdrawrects(ST7735_t3 *_ptft, uint16_t color) {
 }
 
 void testfillrects(ST7735_t3 *_ptft, uint16_t color1, uint16_t color2) {
-  _ptft->fillScreen(ST7735_BLACK);
+  _ptft->fillScreen(ST77XX_BLACK);
   for (int16_t x = _ptft->width() - 1; x > 6; x -= 6) {
     _ptft->fillRect(_ptft->width() / 2 - x / 2, _ptft->height() / 2 - x / 2 , x, x, color1);
     _ptft->drawRect(_ptft->width() / 2 - x / 2, _ptft->height() / 2 - x / 2 , x, x, color2);
@@ -404,7 +404,7 @@ void testfillrects(ST7735_t3 *_ptft, uint16_t color1, uint16_t color2) {
 }
 
 void testcircles(ST7735_t3 *_ptft, uint8_t radius, uint16_t color) {
-  _ptft->fillScreen(ST7735_BLACK);
+  _ptft->fillScreen(ST77XX_BLACK);
   for (int16_t x = radius; x < _ptft->width(); x += radius * 2) {
     for (int16_t y = radius; y < _ptft->height(); y += radius * 2) {
       _ptft->fillCircle(x, y, radius, color);
@@ -419,7 +419,7 @@ void testcircles(ST7735_t3 *_ptft, uint8_t radius, uint16_t color) {
 }
 
 void testtriangles(ST7735_t3 *_ptft) {
-  _ptft->fillScreen(ST7735_BLACK);
+  _ptft->fillScreen(ST77XX_BLACK);
   int color = 0xF800;
   int t;
   int w = _ptft->width() / 2;
@@ -437,7 +437,7 @@ void testtriangles(ST7735_t3 *_ptft) {
 }
 
 void testroundrects(ST7735_t3 *_ptft) {
-  _ptft->fillScreen(ST7735_BLACK);
+  _ptft->fillScreen(ST77XX_BLACK);
   int color = 100;
   int i;
   int t;
@@ -461,18 +461,18 @@ void testroundrects(ST7735_t3 *_ptft) {
 
 void tftPrintTest(ST7735_t3 *_ptft) {
   _ptft->setTextWrap(false);
-  _ptft->fillScreen(ST7735_BLACK);
+  _ptft->fillScreen(ST77XX_BLACK);
   _ptft->setCursor(0, 30);
-  _ptft->setTextColor(ST7735_RED);
+  _ptft->setTextColor(ST77XX_RED);
   _ptft->setTextSize(1);
   _ptft->println("Hello World!");
-  _ptft->setTextColor(ST7735_YELLOW);
+  _ptft->setTextColor(ST77XX_YELLOW);
   _ptft->setTextSize(2);
   _ptft->println("Hello World!");
-  _ptft->setTextColor(ST7735_GREEN);
+  _ptft->setTextColor(ST77XX_GREEN);
   _ptft->setTextSize(3);
   _ptft->println("Hello World!");
-  _ptft->setTextColor(ST7735_BLUE);
+  _ptft->setTextColor(ST77XX_BLUE);
   _ptft->setTextSize(4);
   _ptft->print(1234.567);
   UpdateScreen();

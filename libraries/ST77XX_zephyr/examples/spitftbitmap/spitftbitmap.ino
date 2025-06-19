@@ -75,7 +75,7 @@ void setup(void) {
   Serial.print("Initializing SD card...");
   if (!SD.begin(SD_CS)) {
     Serial.println("failed!");
-    tft.fillScreen(ST7735_BLACK);
+    tft.fillScreen(ST77XX_BLACK);
     tft.setCursor(5, tft.height() / 2 - 6);
     tft.print("Unable to access");
     tft.setCursor(32, tft.height() / 2 + 6);
@@ -92,7 +92,7 @@ void setup(void) {
 void loop() {
   // uncomment these lines to draw bitmaps in different locations/rotations!
   /*
-    tft.fillScreen(ST7735_BLACK); // Clear display
+    tft.fillScreen(ST77XX_BLACK); // Clear display
     for (int i=0; i<4; i++)       // Draw 4 parrots
       bmpDraw("parrot.bmp", tft.width() / 4 * i, tft.height() / 4 * i);
     delay(1000);
@@ -140,13 +140,13 @@ void bmpDraw(const char *filename, uint8_t x, uint16_t y) {
   bmpFile = SD.open(filename);
   if (!bmpFile) {
     Serial.print("File not found");
-    tft.fillScreen(ST7735_BLACK);
+    tft.fillScreen(ST77XX_BLACK);
     tft.setCursor(12, tft.height() / 2 - 12);
     tft.print("Unable to");
     tft.setCursor(12, tft.height() / 2 - 0);
     tft.print("read file: ");
     tft.setCursor(12, tft.height() / 2 + 12);
-    tft.setTextColor(ST7735_YELLOW);
+    tft.setTextColor(ST77XX_YELLOW);
     tft.print(filename);
     return;
   }

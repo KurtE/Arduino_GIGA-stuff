@@ -42,39 +42,39 @@ void setup(void) {
 
 void loop() {
 
-  tft.fillScreen(ST7735_BLACK);
+  tft.fillScreen(ST77XX_BLACK);
   
   for(byte datum = 0; datum < 9; datum++) {
-    tft.setTextColor(ST7735_WHITE, ST7735_BLACK);
+    tft.setTextColor(ST77XX_WHITE, ST77XX_BLACK);
     
     tft.setTextDatum(datum);
     
     tft.drawNumber(88,160,60);
-    tft.fillCircle(160,120,5,ST7735_RED);
+    tft.fillCircle(160,120,5,ST77XX_RED);
     
     tft.setTextDatum(MC_DATUM);
     
-    tft.setTextColor(ST7735_YELLOW);
+    tft.setTextColor(ST77XX_YELLOW);
     tft.drawString("TEENSY 4",160,120);
     delay(1000);
-    tft.fillScreen(ST7735_BLACK);
+    tft.fillScreen(ST77XX_BLACK);
   }
 
   tft.setTextDatum(MC_DATUM);
   
-  tft.setTextColor(ST7735_BLACK);
+  tft.setTextColor(ST77XX_BLACK);
   tft.drawString("X",160,120);
   delay(1000);
-  tft.fillScreen(ST7735_BLACK);
+  tft.fillScreen(ST77XX_BLACK);
   
   tft.setTextDatum(MC_DATUM);
   
-  tft.setTextColor(ST7735_BLACK);
+  tft.setTextColor(ST77XX_BLACK);
   tft.drawString("X",160,120);
   delay(1000);
-  tft.fillScreen(ST7735_BLACK);
+  tft.fillScreen(ST77XX_BLACK);
 
-  tft.setTextColor(ST7735_WHITE, ST7735_BLUE);
+  tft.setTextColor(ST77XX_WHITE, ST77XX_BLUE);
 
   tft.setTextDatum(MC_DATUM);
 
@@ -82,24 +82,24 @@ void loop() {
   float test = 67.125;
   tft.drawFloat(test, 4, 160, 180);
   delay(1000);
-  tft.fillScreen(ST7735_BLACK);
+  tft.fillScreen(ST77XX_BLACK);
   test = -0.555555;
   tft.drawFloat(test, 3, 160, 180);
   delay(1000);
-  tft.fillScreen(ST7735_BLACK);
+  tft.fillScreen(ST77XX_BLACK);
   test = 0.1;
   tft.drawFloat(test, 4, 160, 180);
   delay(1000);
-  tft.fillScreen(ST7735_BLACK);
+  tft.fillScreen(ST77XX_BLACK);
   test = 9999999;
   tft.drawFloat(test, 1, 160, 180);
   delay(1000);
   
-  tft.fillCircle(160,180,5,ST7735_YELLOW);
+  tft.fillCircle(160,180,5,ST77XX_YELLOW);
   
   tft.setTextDatum(MC_DATUM);
   
-  tft.setTextColor(ST7735_BLACK);
+  tft.setTextColor(ST77XX_BLACK);
   tft.drawString("X",160,180);
 
   delay(4000);

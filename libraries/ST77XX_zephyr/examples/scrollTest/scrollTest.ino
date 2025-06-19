@@ -13,21 +13,17 @@
   MIT license, all text above must be included in any redistribution
  ****************************************************/
 
+#include <ST77XX_zephyr.h>
+//#include "ST77XX_zephyr_font_ComicSansMS.h"
 
-#include <ST7735_zephyr.h> // Hardware-specific library
-#include <ST7789_zephyr.h> // Hardware-specific library
-#include <SPI.h>
-#include <st7735_t3_font_ComicSansMS.h>
 
-#define TFT_MISO  12
-#define TFT_MOSI  11  //a12
-#define TFT_SCK   13  //a13
-#define TFT_DC   9 
-#define TFT_CS   10  
-#define TFT_RST  8
 
-// Use hardware SPI (on Uno, #13, #12, #11) and the above for CS/DC
-ST7789_t3 tft = ST7789_t3(TFT_CS, TFT_DC, TFT_MOSI, TFT_SCK, TFT_RST);
+#define TFT_DC   4 
+#define TFT_CS   2  
+#define TFT_RST  3
+
+
+ST7796_zephyr tft = ST7796_zephyr(&SPI, TFT_CS, TFT_DC, TFT_RST);
 
 // If using the breakout, change pins as desired
 //Adafruit_ST7735 tft = Adafruit_ST7735(TFT_CS, TFT_DC, TFT_MOSI, TFT_CLK, TFT_RST, TFT_MISO);
@@ -36,24 +32,26 @@ void setup() {
 
   Serial.begin(9600);
  
-  tft.init(240, 320);           // Init ST7789 320x240
+  //tft.init(240, 320);           // Init ST7789 320x240
+  tft.init(320, 480);
+
   tft.setRotation(3);
   tft.useFrameBuffer(true);
-  tft.fillScreen(ST7735_BLACK);
+  tft.fillScreen(ST77XX_BLACK);
   while (!Serial) ; 
-  tft.setTextColor(ST7735_WHITE);  tft.setTextSize(1);
+  tft.setTextColor(ST77XX_WHITE);  tft.setTextSize(1);
   tft.enableScroll();
   tft.setScrollTextArea(0,0,120,240);
-  tft.setScrollBackgroundColor(ST7735_GREEN);
+  tft.setScrollBackgroundColor(ST77XX_GREEN);
 
   tft.setCursor(180, 100);
 
-  tft.setFont(ComicSansMS_12);
+ // tft.setFont(ComicSansMS_12);
   tft.print("Fixed text");
 
   tft.setCursor(0, 0);
 
-  tft.setTextColor(ST7735_BLACK); 
+  tft.setTextColor(ST77XX_BLACK); 
 
   for(int i=0;i<20;i++){
     tft.print("  this is line ");
@@ -62,12 +60,12 @@ void setup() {
     delay(100);
   }
 
-  tft.fillScreen(ST7735_BLACK);
+  tft.fillScreen(ST77XX_BLACK);
   tft.setScrollTextArea(40,50,120,120);
-  tft.setScrollBackgroundColor(ST7735_GREEN);
-  tft.setFont(ComicSansMS_10);
+  tft.setScrollBackgroundColor(ST77XX_GREEN);
+  //tft.setFont(ComicSansMS_10);
 
-  tft.setTextSize(1);
+  tft.setTextSize(2);
   tft.setCursor(40, 50);
 
   for(int i=0;i<20;i++){

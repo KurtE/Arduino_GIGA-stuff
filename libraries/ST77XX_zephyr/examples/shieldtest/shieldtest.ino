@@ -47,7 +47,7 @@ void setup(void) {
   //tft.initR(INITR_144GREENTAB);
 
   Serial.println("OK!");
-  tft.fillScreen(ST7735_BLACK);
+  tft.fillScreen(ST77XX_BLACK);
 }
 
 
@@ -73,38 +73,38 @@ void loop() {
   uint8_t b = readButton();
   tft.setTextSize(3);
   if (b == BUTTON_DOWN) {
-    tft.setTextColor(ST7735_RED);
+    tft.setTextColor(ST77XX_RED);
     tft.setCursor(0, 10);
     tft.print("Down ");
     buttonhistory |= 1;
   }
   if (b == BUTTON_LEFT) {
-    tft.setTextColor(ST7735_YELLOW);
+    tft.setTextColor(ST77XX_YELLOW);
     tft.setCursor(0, 35);
      tft.print("Left ");
     buttonhistory |= 2;
   }
   if (b == BUTTON_UP) {
-    tft.setTextColor(ST7735_GREEN);
+    tft.setTextColor(ST77XX_GREEN);
     tft.setCursor(0, 60);
     tft.print("Up");
     buttonhistory |= 4;
   }
   if (b == BUTTON_RIGHT) {
-    tft.setTextColor(ST7735_BLUE);
+    tft.setTextColor(ST77XX_BLUE);
     tft.setCursor(0, 85);
     tft.print("Right");
     buttonhistory |= 8;
   }
   if ((b == BUTTON_SELECT) && (buttonhistory == 0xF)) {
-    tft.setTextColor(ST7735_MAGENTA);
+    tft.setTextColor(ST77XX_MAGENTA);
     tft.setCursor(0, 110);
     tft.print("SELECT");
     buttonhistory |= 8;
     delay(2000);
     Serial.print("Initializing SD card...");
     if (!SD.begin(SD_CS)) {
-      tft.fillScreen(ST7735_BLACK);
+      tft.fillScreen(ST77XX_BLACK);
       tft.setCursor(5, tft.height()/2 - 6);
       tft.print("Unable to access");
       tft.setCursor(32, tft.height()/2 + 6);
@@ -153,13 +153,13 @@ void bmpDraw(const char *filename, uint8_t x, uint8_t y) {
   // Open requested file on SD card
   bmpFile = SD.open(filename);
   if (!bmpFile) {
-    tft.fillScreen(ST7735_BLACK);
+    tft.fillScreen(ST77XX_BLACK);
     tft.setCursor(12, tft.height()/2 - 12);
     tft.print("Unable to");
     tft.setCursor(12, tft.height()/2 - 0);
     tft.print("read file: ");
     tft.setCursor(12, tft.height()/2 + 12);
-    tft.setTextColor(ST7735_YELLOW);
+    tft.setTextColor(ST77XX_YELLOW);
     tft.print(filename);
     Serial.print("File not found");
     return;
