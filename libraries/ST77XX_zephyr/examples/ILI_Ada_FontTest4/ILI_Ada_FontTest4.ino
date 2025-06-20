@@ -4,7 +4,7 @@
 
 #include <ST77XX_zephyr.h>
 
-//#include "font_Arial.h"
+#include "ST77XX_zephyr_font_Arial.h"
 //#include "font_ArialBold.h"
 //#include "font_ComicSansMS.h"
 //#include "font_OpenSans.h"
@@ -34,7 +34,7 @@ typedef struct {
 
 
 const ili_fonts_test_t font_test_list[] = {
-//  {&Arial_12, nullptr,  "Arial_12", ST77XX_WHITE, ST77XX_WHITE},
+  {&Arial_12, nullptr,  "Arial_12", ST77XX_WHITE, ST77XX_WHITE},
 //  {&Arial_12_Bold, nullptr,  "ArialBold 12", ST77XX_YELLOW, ST77XX_YELLOW},
 //  {&ComicSansMS_12, nullptr,  "ComicSansMS 12", ST77XX_GREEN, ST77XX_GREEN},
 //  {&DroidSans_12, nullptr,  "DroidSans_12", ST77XX_WHITE, ST77XX_WHITE},
@@ -117,11 +117,11 @@ void setup() {
   tft.fillWindow(ST77XX_BLACK);
 
   tft.setTextColor(ST77XX_WHITE);
-#if 0
   tft.setFont(Arial_12);
   tft.println("Arial_12");
   displayStuff();
   
+#if 0
   tft.setTextColor(ST77XX_YELLOW);
   tft.setFont(Arial_12_Bold);
   tft.println("ArialBold 12");
@@ -168,7 +168,7 @@ void setup() {
 
 void loop()
 {
-#if 0
+#if 1
   tft.setFont(Arial_12);
 #endif
   Serial.print("\nRotation: ");

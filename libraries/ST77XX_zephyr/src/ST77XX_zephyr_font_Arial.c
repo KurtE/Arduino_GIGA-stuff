@@ -1392,6 +1392,7 @@ const ILI9341_t3_font_t Arial_18 = {
 };
 
 
+#ifdef INCLUDE_LARGER_ARIAL
 
 static const unsigned char Arial_20_data[] = {
 0x00,0x00,0x01,0x00,0x02,0xA3,0x01,0x1B,0xEF,0x1C,
@@ -12989,5 +12990,6 @@ const ILI9341_t3_font_t Arial_96 = {
 	95
 };
 
+#endif // INCLUDE_LARGER_ARIAL
 
 

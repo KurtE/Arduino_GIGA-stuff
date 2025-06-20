@@ -7,6 +7,8 @@
 extern "C" {
 #endif
 
+//#define INCLUDE_LARGER_ARIAL
+
 extern const ILI9341_t3_font_t Arial_8;
 extern const ILI9341_t3_font_t Arial_9;
 extern const ILI9341_t3_font_t Arial_10;
@@ -16,6 +18,7 @@ extern const ILI9341_t3_font_t Arial_13;
 extern const ILI9341_t3_font_t Arial_14;
 extern const ILI9341_t3_font_t Arial_16;
 extern const ILI9341_t3_font_t Arial_18;
+#ifdef INCLUDE_LARGER_ARIAL
 extern const ILI9341_t3_font_t Arial_20;
 extern const ILI9341_t3_font_t Arial_24;
 extern const ILI9341_t3_font_t Arial_28;
@@ -25,6 +28,7 @@ extern const ILI9341_t3_font_t Arial_48;
 extern const ILI9341_t3_font_t Arial_60;
 extern const ILI9341_t3_font_t Arial_72;
 extern const ILI9341_t3_font_t Arial_96;
+#endif
 
 #ifdef __cplusplus
 } // extern "C"
