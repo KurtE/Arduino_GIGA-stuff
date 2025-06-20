@@ -917,9 +917,19 @@ void ILI9341_GIGA_n::writeRect(int16_t x, int16_t y, int16_t w, int16_t h,
     #endif
   } else {
     // data us contiguious so output in one operation
+    #if 0
     struct spi_buf tx_buf = { .buf = (void*)pcolors, .len = (size_t)(w * h * 2 )};
     const struct spi_buf_set tx_buf_set = { .buffers = &tx_buf, .count = 1 };
     spi_transceive(_spi_dev, &_config16, &tx_buf_set, nullptr);
+    #else
+    uint32_t len = w * h;
+    while (len > 1) {
+       writedata16_cont(*pcolors++);
+       len --;
+    }
+    writedata16_last(*pcolors++);
+
+    #endif
   }
   endSPITransaction();
 }

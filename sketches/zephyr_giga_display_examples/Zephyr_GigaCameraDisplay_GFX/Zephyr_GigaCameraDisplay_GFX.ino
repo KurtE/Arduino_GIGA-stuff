@@ -18,7 +18,7 @@ uint16_t color565(uint8_t r, uint8_t g, uint8_t b) {
 
 #define CAMERA_WIDTH 320
 #define CAMERA_HEIGHT 240
-#define SCALE 1
+#define SCALE 2
 
 #include <camera.h>
  
@@ -67,7 +67,8 @@ void setup() {
   Serial.println("Before camera start");
   Serial.flush();
   //cam.debug(Serial);
-  if (!cam.begin(CAMERA_WIDTH, CAMERA_HEIGHT, CAMERA_RGB565)) {
+
+  if (!cam.begin(CAMERA_WIDTH, CAMERA_HEIGHT, CAMERA_RGB565, true)) {
     fatal_error("Camera begin failed");
   }
   //Serial.println("Before setRotation");
@@ -112,7 +113,7 @@ void loop() {
 
     uint16_t *pixels = (uint16_t *)fb.getBuffer();
     elapsedMicros emDisplay;
-    for (int i = 0; i < CAMERA_WIDTH*CAMERA_HEIGHT; i++) pixels[i] = HTONS(pixels[i]);
+//    for (int i = 0; i < CAMERA_WIDTH*CAMERA_HEIGHT; i++) pixels[i] = HTONS(pixels[i]);
     #if defined(SCALE) && SCALE > 1
     // Quick and dirty scale.
     int yDisplay = (display.height() - (CAMERA_HEIGHT * SCALE)) / 2;

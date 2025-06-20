@@ -1,10 +1,10 @@
 #include <elapsedMillis.h>
 
-//#include <Adafruit_GFX.h>
+#include <Adafruit_GFX.h>
 
 #include <ST77XX_zephyr.h>
 
-#include "font_Arial.h"
+//#include "font_Arial.h"
 //#include "font_ArialBold.h"
 //#include "font_ComicSansMS.h"
 //#include "font_OpenSans.h"
@@ -16,8 +16,8 @@
 #define CENTER ST77XX_zephyr_n::CENTER
 
 // maybe a few GFX FOnts?
-//#include <Fonts/FreeMono9pt7b.h>
-//#include <Fonts/FreeSerif9pt7b.h>
+#include <Fonts/FreeMono9pt7b.h>
+#include <Fonts/FreeSerif9pt7b.h>
 
 #define TFT_DC   4 
 #define TFT_CS   2  
@@ -34,7 +34,7 @@ typedef struct {
 
 
 const ili_fonts_test_t font_test_list[] = {
-  {&Arial_12, nullptr,  "Arial_12", ST77XX_WHITE, ST77XX_WHITE},
+//  {&Arial_12, nullptr,  "Arial_12", ST77XX_WHITE, ST77XX_WHITE},
 //  {&Arial_12_Bold, nullptr,  "ArialBold 12", ST77XX_YELLOW, ST77XX_YELLOW},
 //  {&ComicSansMS_12, nullptr,  "ComicSansMS 12", ST77XX_GREEN, ST77XX_GREEN},
 //  {&DroidSans_12, nullptr,  "DroidSans_12", ST77XX_WHITE, ST77XX_WHITE},
@@ -42,10 +42,10 @@ const ili_fonts_test_t font_test_list[] = {
 //  {&Crystal_16_Italic, nullptr,  "CRYSTAL_16", ST77XX_BLACK, ST77XX_YELLOW},
 //  {&Chancery_16_Italic, nullptr,  "Chancery_16_Italic", ST77XX_GREEN, ST77XX_GREEN},
 //  {&OpenSans16, nullptr,  "OpenSans 16", ST77XX_RED, ST77XX_YELLOW},
-//  {nullptr, &FreeMono9pt7b,  "GFX FreeMono9pt7b", ST77XX_WHITE, ST77XX_WHITE},
-//  {nullptr, &FreeMono9pt7b,  "GFX FreeMono9pt7b", ST77XX_RED, ST77XX_YELLOW},
-//  {nullptr, &FreeSerif9pt7b,  "GFX FreeSerif9pt7b", ST77XX_WHITE, ST77XX_WHITE},
-//  {nullptr, &FreeSerif9pt7b,  "GFX FreeSerif9pt7b", ST77XX_RED, ST77XX_YELLOW},
+  {nullptr, &FreeMono9pt7b,  "GFX FreeMono9pt7b", ST77XX_WHITE, ST77XX_WHITE},
+  {nullptr, &FreeMono9pt7b,  "GFX FreeMono9pt7b", ST77XX_RED, ST77XX_YELLOW},
+  {nullptr, &FreeSerif9pt7b,  "GFX FreeSerif9pt7b", ST77XX_WHITE, ST77XX_WHITE},
+  {nullptr, &FreeSerif9pt7b,  "GFX FreeSerif9pt7b", ST77XX_RED, ST77XX_YELLOW},
 
 } ;
 
@@ -117,10 +117,10 @@ void setup() {
   tft.fillWindow(ST77XX_BLACK);
 
   tft.setTextColor(ST77XX_WHITE);
+#if 0
   tft.setFont(Arial_12);
   tft.println("Arial_12");
   displayStuff();
-#if 0
   
   tft.setTextColor(ST77XX_YELLOW);
   tft.setFont(Arial_12_Bold);
@@ -168,7 +168,9 @@ void setup() {
 
 void loop()
 {
+#if 0
   tft.setFont(Arial_12);
+#endif
   Serial.print("\nRotation: ");
   Serial.println(test_screen_rotation);
   tft.setRotation(test_screen_rotation);
