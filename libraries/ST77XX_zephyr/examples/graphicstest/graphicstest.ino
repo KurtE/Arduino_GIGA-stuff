@@ -30,10 +30,14 @@
 // If you use the short version of the constructor and the DC
 // pin is hardware CS pin, then it will be slower.
 
-#define TFT_DC   4 
-#define TFT_CS   2  
-#define TFT_RST  3
 
+//#define TFT_DC   4 
+//#define TFT_CS   2  
+//#define TFT_RST  3
+
+#define TFT_DC   8 
+#define TFT_CS   10  
+#define TFT_RST  9
 
 
 // Note the above pins are for the SPI object.  For those Teensy boards which have
@@ -59,13 +63,13 @@
 // an output. This is much faster - also required if you want
 // to use the microSD card (see the image drawing example)
 // For 1.44" and 1.8" TFT with ST7735 use
-ST7735_zephyr tft = ST7735_zephyr(&SPI, TFT_CS, TFT_DC, TFT_RST);
+//ST7735_zephyr tft = ST7735_zephyr(&SPI, TFT_CS, TFT_DC, TFT_RST);
 
 // For 1.54" TFT with ST7789
 //ST7789_zephyr tft = ST7789_zephyr(&SPI, TFT_CS, TFT_DC, TFT_RST);
 
 // For 3.5" or 4.0" TFT with ST7796
-//ST7796_zephyr tft = ST7796_zephyr(&SPI, TFT_CS, TFT_DC, TFT_RST);
+ST7796_zephyr tft = ST7796_zephyr(&SPI1, TFT_CS, TFT_DC, TFT_RST);
 
 // forward references:
 // forward references:
@@ -80,6 +84,7 @@ extern void testdrawcircles(uint8_t radius, uint16_t color);
 extern void testroundrects();
 extern void testtriangles();
 extern void mediabuttons();
+extern unsigned long testText();
 
 
 
@@ -100,7 +105,7 @@ void setup(void) {
   //tft.initR(INITR_144GREENTAB);
 
   // Or use this initializer (uncomment) if you're using a .96" TFT(160x80)
-  tft.initR(INITR_MINI160x80);
+  //tft.initR(INITR_MINI160x80);
 
   // Or use this initializer (uncomment) for Some 1.44" displays use different memory offsets
   // Try it if yours is not working properly
@@ -112,7 +117,7 @@ void setup(void) {
 
   // OR use this initializer (uncomment) if using a 2.0" 320x240 TFT:
   //tft.init(240, 320);           // Init ST7789 320x240
-  //tft.init(320, 480);
+  tft.init(320, 480);
   printk("tft.init called\n");
   // OR use this initializer (uncomment) if using a 240x240 clone 
   // that does not have a CS pin2.0" 320x240 TFT:
@@ -177,14 +182,29 @@ void setup(void) {
 
   Serial.println("done");
   delay(1000);
-}
-
-void loop() {
   tft.invertDisplay(true);
   delay(500);
   tft.invertDisplay(false);
   delay(500);
+
 }
+
+void loop() {
+#if 1
+  for (uint8_t rotation = 0; rotation < 4; rotation++) {
+    tft.setRotation(rotation);
+    testText();
+    delay(1000);
+  }
+#else
+  tft.invertDisplay(true);
+  delay(500);
+  tft.invertDisplay(false);
+  delay(500);
+#endif  
+}
+
+
 
 void testlines(uint16_t color) {
   tft.fillScreen(ST77XX_BLACK);
@@ -367,3 +387,30 @@ void mediabuttons() {
   // play color
   tft.fillTriangle(42, 20, 42, 60, 90, 40, ST77XX_GREEN);
 }
+unsigned long testText() {
+  tft.fillScreen(ST77XX_BLACK);
+  unsigned long start = micros();
+  tft.setCursor(0, 0);
+  tft.setTextColor(ST77XX_WHITE);  tft.setTextSize(1);
+  tft.println("Hello World!");
+  tft.setTextColor(ST77XX_YELLOW); tft.setTextSize(2);
+  tft.println(1234.56);
+  tft.setTextColor(ST77XX_RED);    tft.setTextSize(3);
+  tft.println(0xDEADBEEF, HEX);
+  tft.println();
+  tft.setTextColor(ST77XX_GREEN);
+  tft.setTextSize(5);
+  tft.println("Groop");
+  tft.setTextSize(2);
+  tft.println("I implore thee,");
+  tft.setTextSize(1);
+  tft.println("my foonting turlingdromes.");
+  tft.println("And hooptiously drangle me");
+  tft.println("with crinkly bindlewurdles,");
+  tft.println("Or I will rend thee");
+  tft.println("in the gobberwarts");
+  tft.println("with my blurglecruncheon,");
+  tft.println("see if I don't!");
+  return micros() - start;
+}
+
