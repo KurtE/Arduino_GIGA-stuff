@@ -21,53 +21,66 @@
   MIT license, all text above must be included in any redistribution
  ****************************************************/
 
-#include <ST7735_zephyr.h>    // Hardware-specific library
-#include <ST7789_zephyr.h>    // Hardware-specific library
+#include <ST77XX_zephyr.h>
 #include <SPI.h>
 #include <SD.h>
 
 //#define IMAGE_COLORS_BGR // set if you colors are reversed
 
-// This Teensy3 native optimized version requires specific pins
-//
-#define TFT_SCLK 13  // SCLK can also use pin 14
-#define TFT_MOSI 11  // MOSI can also use pin 7
 #define TFT_CS   10  // CS & DC can use pins 2, 6, 9, 10, 15, 20, 21, 22, 23
-#define TFT_DC    9  //  but certain pairs must NOT be used: 2+10, 6+9, 20+23, 21+22
-#define TFT_RST   8  // RST can use any pin
+#define TFT_DC    8  //  but certain pairs must NOT be used: 2+10, 6+9, 20+23, 21+22
+#define TFT_RST   9  // RST can use any pin
 #define SD_CS     4  // CS for SD card, can use any pin
 
 // Use one or the other
-ST7735_t3 tft = ST7735_t3(TFT_CS, TFT_DC, TFT_MOSI, TFT_SCLK, TFT_RST);
-//ST7789_t3 tft = ST7789_t3(TFT_CS, TFT_DC, TFT_MOSI, TFT_SCLK, TFT_RST);
+//ST7735_zephyr tft = ST7735_zephyr(&SPI, TFT_CS, TFT_DC, TFT_RST);
+
+// For 1.54" TFT with ST7789
+//ST7789_zephyr tft = ST7789_zephyr(&SPI, TFT_CS, TFT_DC, TFT_RST);
+
+// For 3.5" or 4.0" TFT with ST7796
+ST7796_zephyr tft = ST7796_zephyr(&SPI1, TFT_CS, TFT_DC, TFT_RST);
 
 void setup(void) {
   pinMode(SD_CS, INPUT_PULLUP);  // keep SD CS high when not using SD card
   Serial.begin(9600);
 
-  // only uncomment one of these display initializers.
-  // ST7735 - More options mentioned in examples for st7735_t3 library
-  //tft.initR(INITR_BLACKTAB); // if you're using a 1.8" TFT 128x160 displays
-  tft.initR(INITR_144GREENTAB); // if you're using a 1.44" TFT (128x128)
-  //tft.initR(INITR_MINI160x80);  //if you're using a .96" TFT(160x80)
+  // Use this initializer if you're using a 1.8" TFT 128x160 displays
+  //tft.initR(INITR_BLACKTAB);
 
-  // ST7789
-  //tft.init(240, 240);           // initialize a ST7789 chip, 240x240 pixels
-  //tft.init(240, 320);           // Init ST7789 2.0" 320x240
-  //tft.init(135, 240);             // Init ST7789 1.4" 135x240
-  //tft.init(240, 240, SPI_MODE2);    // clones Init ST7789 240x240 no CS
+  // Or use this initializer (uncomment) if you're using a 1.44" TFT (128x128)
+  //tft.initR(INITR_144GREENTAB);
+
+  // Or use this initializer (uncomment) if you're using a .96" TFT(160x80)
+  //tft.initR(INITR_MINI160x80);
+
+  // Or use this initializer (uncomment) for Some 1.44" displays use different memory offsets
+  // Try it if yours is not working properly
+  // May need to tweek the offsets
+  //tft.setRowColStart(32,0);
+
+  // Or use this initializer (uncomment) if you're using a 1.54" 240x240 TFT
+  //tft.init(240, 240);   // initialize a ST7789 chip, 240x240 pixels
+
+  // OR use this initializer (uncomment) if using a 2.0" 320x240 TFT:
+  //tft.init(240, 320);           // Init ST7789 320x240
+  tft.init(320, 480);
+  printk("tft.init called\n");
+  // OR use this initializer (uncomment) if using a 240x240 clone 
+  // that does not have a CS pin2.0" 320x240 TFT:
+  //tft.init(240, 240, SPI_MODE2);           // Init ST7789 240x240 no CS
   tft.setTextColor(ST77XX_BLACK);
   tft.setTextSize(2);
   tft.fillScreen(ST77XX_RED);
-  tft.setCursor(ST7735_t3::CENTER, ST7735_t3::CENTER);
+  tft.setCursor(ST77XX_zephyr_n::CENTER, ST77XX_zephyr_n::CENTER);
   tft.print("RED");
   delay(500);
   tft.fillScreen(ST77XX_GREEN);
-  tft.setCursor(ST7735_t3::CENTER, ST7735_t3::CENTER);
+  tft.setCursor(ST77XX_zephyr_n::CENTER, ST77XX_zephyr_n::CENTER);
   tft.print("GREEN");
   delay(500);
   tft.fillScreen(ST77XX_BLUE);
-  tft.setCursor(ST7735_t3::CENTER, ST7735_t3::CENTER);
+  tft.setCursor(ST77XX_zephyr_n::CENTER, ST77XX_zephyr_n::CENTER);
   tft.print("BLUE");
   delay(500);
   tft.fillScreen(ST77XX_BLACK);

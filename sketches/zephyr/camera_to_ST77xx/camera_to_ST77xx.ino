@@ -10,6 +10,9 @@ Camera cam;
 #define TFT_CS   10  // CS & DC can use pins 2, 6, 9, 10, 15, 20, 21, 22, 23
 #define TFT_DC    8  //  but certain pairs must NOT be used: 2+10, 6+9, 20+23, 21+22
 #define TFT_RST   9  // RST can use any pin
+
+#define CAMERA_WIDTH 480 //320
+#define CAMERA_HEIGHT 320 // 240
 // Use one or the other
 //ST7735_zephyr tft = ST7735_zephyr(&SPI, TFT_CS, TFT_DC, TFT_RST);
 
@@ -71,9 +74,11 @@ void setup() {
   tft.fillScreen(ST77XX_BLACK);
   delay(500);
 
-  if (!cam.begin(320, 240, CAMERA_RGB565, true)) {
+  Serial.println("call cam.begin");
+  if (!cam.begin(CAMERA_WIDTH, CAMERA_HEIGHT, CAMERA_RGB565, true)) {
     fatal_error("Camera begin failed");
   }
+  Serial.println("Camera started");
   cam.setVerticalFlip(false);
   cam.setHorizontalMirror(false);
 }
@@ -81,9 +86,12 @@ void setup() {
 void loop() {
   // put your main code here, to run repeatedly:
   FrameBuffer fb;
-  if (cam.grabFrame(fb)) {
+  Serial.print("Call grabFrame");
+  bool frame_received = cam.grabFrame(fb);
+  Serial.println(frame_received? " true" : " false");
+  if (frame_received) {
     digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
-    tft.writeRect(0, 0, 320, 240, (const uint16_t*)fb.getBuffer());
+    tft.writeRect(0, 0, CAMERA_WIDTH, CAMERA_HEIGHT, (const uint16_t*)fb.getBuffer());
     //tft.writeSubImageRectBytesReversed(0, 0, 320, 240, 0, 0, 320, 240, (const uint16_t*)fb.getBuffer());
     //tft.writeSubImageRect(0, 0, 320, 240, 0, 0, 320, 240, (const uint16_t*)fb.getBuffer());
     cam.releaseFrame(fb);
