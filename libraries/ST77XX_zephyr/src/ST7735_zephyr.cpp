@@ -2,7 +2,7 @@
 #include "ST77XX_zephyr.h"
 
 ST7735_zephyr::ST7735_zephyr(SPIClass *pspi, uint8_t CS, uint8_t DC, uint8_t RST) :
-    ST77XX_zephyr_n(pspi, CS, DC, RST) 
+    ST77XX_zephyr(pspi, CS, DC, RST) 
 {
 }
 

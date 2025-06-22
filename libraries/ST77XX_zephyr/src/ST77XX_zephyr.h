@@ -1,5 +1,5 @@
 //***************************************************
-// https://github.com/kurte/ST77XX_zephyr_n
+// https://github.com/kurte/ST77XX_zephyr
 // http://forum.pjrc.com/threads/26305-Highly-optimized-ILI9341-(320x240-TFT-color-display)-library
 //
 // Warning this is Kurt's updated version which allows it to work on different SPI busses.
@@ -66,8 +66,8 @@
  *
 */
 
-#ifndef _ST77XX_zephyr_n_H_
-#define _ST77XX_zephyr_n_H_
+#ifndef _ST77XX_zephyr_H_
+#define _ST77XX_zephyr_H_
 
 // Allow us to enable or disable capabilities, particully Frame Buffer and
 // Clipping for speed and size
@@ -131,20 +131,20 @@ typedef struct {
 // clock
 #define ST77XX_SPICLOCK 16000000
 
-class ST77XX_zephyr_n : public Print {
+class ST77XX_zephyr : public Print {
 public:
   // Constructor
   //   pspi: either  &SPI (6 pin spi connector) or &SPI1 (shield pins)
   //   CS: Chip select pin,  DC: Data/Command pin
   //   RST: optional reset pin
-  ST77XX_zephyr_n(SPIClass *pspi, uint8_t CS, uint8_t DC, uint8_t RST = 255);
+  ST77XX_zephyr(SPIClass *pspi, uint8_t CS, uint8_t DC, uint8_t RST = 255);
   
-  ST77XX_zephyr_n(uint8_t cs_pin, uint8_t dc_pin, uint8_t rst_pin = 255);
+  ST77XX_zephyr(uint8_t cs_pin, uint8_t dc_pin, uint8_t rst_pin = 255);
 
   #ifdef ZEPHYR_PINNAMES_H
   // Allow Pin Names to be used if defined.
-  ST77XX_zephyr_n(SPIClass *pspi, PinName CS, PinName DC, PinName RST = NC);
-  ST77XX_zephyr_n(PinName cs_pin, PinName dc_pin, PinName PinName = NC);
+  ST77XX_zephyr(SPIClass *pspi, PinName CS, PinName DC, PinName RST = NC);
+  ST77XX_zephyr(PinName cs_pin, PinName dc_pin, PinName PinName = NC);
   #endif
 
 
@@ -231,6 +231,18 @@ public:
   // the color for each pixel.
   void writeRect(int16_t x, int16_t y, int16_t w, int16_t h,
                  const uint16_t *pcolors);
+
+  // Experiment use the callback version (async) amd see if it is faster.
+  void writeRectCB(int16_t x, int16_t y, int16_t w, int16_t h,
+                 const uint16_t *pcolors, void (*callback)(int result));
+
+  void process_spi_callback (const struct device *dev, int result);
+
+  static void spi_callback (const struct device *dev, int result, void *data) {
+    ((ST77XX_zephyr *)data)->process_spi_callback(dev, result);
+  }
+  void (*_write_rect_cb)(int result) = nullptr;
+
 
   // The write sub-rect is like the writeRect, except we only want to output a portion of it, so it needs to
   // skip through portions of the pcolor array to keep things aligned.
@@ -556,7 +568,7 @@ public:
   void (*_frame_complete_callback)() = nullptr;
   bool _frame_callback_on_HalfDone = false;
 
-  static ST77XX_zephyr_n *_dmaActiveDisplay[2]; // Use pointer to this as a way to get
+  static ST77XX_zephyr *_dmaActiveDisplay[2]; // Use pointer to this as a way to get
                                          // back to object...
   //volatile uint8_t _dma_state = 0;            // DMA status
   volatile uint32_t _dma_frame_count = 0;     // Can return a frame count...
@@ -851,7 +863,7 @@ public:
 #endif
 
 
-class ST7796_zephyr : public ST77XX_zephyr_n  {
+class ST7796_zephyr : public ST77XX_zephyr  {
 public:
   ST7796_zephyr(SPIClass *pspi, uint8_t CS, uint8_t DC, uint8_t RST = 255); 
 
@@ -866,7 +878,7 @@ public:
 
 };
 
-class ST7789_zephyr : public ST77XX_zephyr_n  {
+class ST7789_zephyr : public ST77XX_zephyr  {
 public:
   ST7789_zephyr(SPIClass *pspi, uint8_t CS, uint8_t DC, uint8_t RST = 255); 
 
@@ -893,7 +905,7 @@ public:
 #define INITR_MINI160x80_ST7735S 0x06
 
 
-class ST7735_zephyr : public ST77XX_zephyr_n  {
+class ST7735_zephyr : public ST77XX_zephyr  {
 public:
   ST7735_zephyr(SPIClass *pspi, uint8_t CS, uint8_t DC, uint8_t RST = 255); 
 

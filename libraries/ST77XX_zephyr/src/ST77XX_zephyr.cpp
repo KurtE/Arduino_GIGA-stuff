@@ -1,4 +1,4 @@
-// https://github.com/KurtE/ST77XX_zephyr_n
+// https://github.com/KurtE/ST77XX_zephyr
 // http://forum.pjrc.com/threads/26305-Highly-optimized-ILI9341-(320x240-TFT-color-display)-library
 
 /***************************************************
@@ -61,7 +61,7 @@
 #define CBALLOC (_screenHeight * _screenWidth * 2)
 
 
-uint16_t ST77XX_zephyr_n::s_row_buff[480]; // 
+uint16_t ST77XX_zephyr::s_row_buff[480]; // 
 
 
 // Constructor when using hardware ILI9241_KINETISK__pspi->  Faster, but must
@@ -74,7 +74,7 @@ uint16_t ST77XX_zephyr_n::s_row_buff[480]; //
 #ifdef ZEPHYR_PINNAMES_H
 
 // Pin Name versions
-ST77XX_zephyr_n::ST77XX_zephyr_n(SPIClass *pspi, PinName cs_pin, PinName dc_pin, PinName rst_pin) : 
+ST77XX_zephyr::ST77XX_zephyr(SPIClass *pspi, PinName cs_pin, PinName dc_pin, PinName rst_pin) : 
     _pspi(pspi), _cs(cs_pin), _dc(dc_pin), _rst(rst_pin) 
 {
 #ifdef ENABLE_ST77XX_FRAMEBUFFER
@@ -84,7 +84,7 @@ ST77XX_zephyr_n::ST77XX_zephyr_n(SPIClass *pspi, PinName cs_pin, PinName dc_pin,
 #endif
 }
 
-ST77XX_zephyr_n::ST77XX_zephyr_n(PinName cs_pin, PinName dc_pin, PinName rst_pin) :
+ST77XX_zephyr::ST77XX_zephyr(PinName cs_pin, PinName dc_pin, PinName rst_pin) :
     _cs(cs_pin), _dc(dc_pin), _rst(rst_pin) 
   {
   // Added to see how much impact actually using non hardware CS pin might be
@@ -99,7 +99,7 @@ ST77XX_zephyr_n::ST77XX_zephyr_n(PinName cs_pin, PinName dc_pin, PinName rst_pin
 
 }
 
-ST77XX_zephyr_n::ST77XX_zephyr_n(SPIClass *pspi, uint8_t cs_pin, uint8_t dc_pin, uint8_t rst_pin) : 
+ST77XX_zephyr::ST77XX_zephyr(SPIClass *pspi, uint8_t cs_pin, uint8_t dc_pin, uint8_t rst_pin) : 
     _pspi(pspi) 
 {
   _cs = digitalPinToPinName(cs_pin);
@@ -112,7 +112,7 @@ ST77XX_zephyr_n::ST77XX_zephyr_n(SPIClass *pspi, uint8_t cs_pin, uint8_t dc_pin,
 #endif
 }
 
-ST77XX_zephyr_n::ST77XX_zephyr_n(uint8_t cs_pin, uint8_t dc_pin, uint8_t rst_pin)
+ST77XX_zephyr::ST77XX_zephyr(uint8_t cs_pin, uint8_t dc_pin, uint8_t rst_pin)
   {
   // Added to see how much impact actually using non hardware CS pin might be
   //_cspinmask = 0;
@@ -132,7 +132,7 @@ ST77XX_zephyr_n::ST77XX_zephyr_n(uint8_t cs_pin, uint8_t dc_pin, uint8_t rst_pin
 
 
 #else
-ST77XX_zephyr_n::ST77XX_zephyr_n(SPIClass *pspi, uint8_t cs_pin, uint8_t dc_pin, uint8_t rst_pin) : 
+ST77XX_zephyr::ST77XX_zephyr(SPIClass *pspi, uint8_t cs_pin, uint8_t dc_pin, uint8_t rst_pin) : 
     _pspi(pspi), _cs(cs_pin), _dc(dc_pin), _rst(rst_pin) 
 {
 #ifdef ENABLE_ST77XX_FRAMEBUFFER
@@ -142,7 +142,7 @@ ST77XX_zephyr_n::ST77XX_zephyr_n(SPIClass *pspi, uint8_t cs_pin, uint8_t dc_pin,
 #endif
 }
 
-ST77XX_zephyr_n::ST77XX_zephyr_n(uint8_t cs_pin, uint8_t dc_pin, uint8_t rst_pin) :
+ST77XX_zephyr::ST77XX_zephyr(uint8_t cs_pin, uint8_t dc_pin, uint8_t rst_pin) :
     _cs(cs_pin), _dc(dc_pin), _rst(rst_pin) 
   {
   // Added to see how much impact actually using non hardware CS pin might be
@@ -160,7 +160,7 @@ ST77XX_zephyr_n::ST77XX_zephyr_n(uint8_t cs_pin, uint8_t dc_pin, uint8_t rst_pin
 
 //=======================================================================
 
-void ST77XX_zephyr_n::setAddrWindow(uint16_t x0, uint16_t y0, uint16_t x1,
+void ST77XX_zephyr::setAddrWindow(uint16_t x0, uint16_t y0, uint16_t x1,
                                 uint16_t y1) {
   beginSPITransaction();
   setAddr(x0, y0, x1, y1);
@@ -168,13 +168,13 @@ void ST77XX_zephyr_n::setAddrWindow(uint16_t x0, uint16_t y0, uint16_t x1,
   endSPITransaction();
 }
 
-void ST77XX_zephyr_n::pushColor(uint16_t color) {
+void ST77XX_zephyr::pushColor(uint16_t color) {
   beginSPITransaction();
   writedata16_last(color);
   endSPITransaction();
 }
 
-void ST77XX_zephyr_n::drawPixel(int16_t x, int16_t y, uint16_t color) {
+void ST77XX_zephyr::drawPixel(int16_t x, int16_t y, uint16_t color) {
   x += _originx;
   y += _originy;
   if ((x < _displayclipx1) || (x >= _displayclipx2) || (y < _displayclipy1) ||
@@ -198,7 +198,7 @@ void ST77XX_zephyr_n::drawPixel(int16_t x, int16_t y, uint16_t color) {
   }
 }
 
-void ST77XX_zephyr_n::drawFastVLine(int16_t x, int16_t y, int16_t h,
+void ST77XX_zephyr::drawFastVLine(int16_t x, int16_t y, int16_t h,
                                 uint16_t color) {
   //printf("\tdrawFastHLine(%d, %d, %d, %x)\n", x, y, h, color);
   x += _originx;
@@ -241,7 +241,7 @@ void ST77XX_zephyr_n::drawFastVLine(int16_t x, int16_t y, int16_t h,
   //printf("\tDFVL end\n");
 }
 
-void ST77XX_zephyr_n::drawFastHLine(int16_t x, int16_t y, int16_t w,
+void ST77XX_zephyr::drawFastHLine(int16_t x, int16_t y, int16_t w,
                                 uint16_t color) {
 //  printf("\tdrawFastHLine(%d, %d, %d, %x)\n", x, y, w, color);
   x += _originx;
@@ -294,7 +294,7 @@ void ST77XX_zephyr_n::drawFastHLine(int16_t x, int16_t y, int16_t w,
 //  printf("\tDFHL end\n");
 }
 
-void ST77XX_zephyr_n::fillScreen(uint16_t color) {
+void ST77XX_zephyr::fillScreen(uint16_t color) {
 #ifdef ENABLE_ST77XX_FRAMEBUFFER
   if (_use_fbtft && _standard) {
     // Speed up lifted from Franks DMA code... _standard is if no offsets and
@@ -349,7 +349,7 @@ void ST77XX_zephyr_n::fillScreen(uint16_t color) {
   }
 }
 
-void ST77XX_zephyr_n::fillRect(int16_t x, int16_t y, int16_t w, int16_t h,
+void ST77XX_zephyr::fillRect(int16_t x, int16_t y, int16_t w, int16_t h,
                            uint16_t color) {
   // printf("\tfillRect(%d, %d, %d, %d, %x)\n", x, y, w, h, color);
   x += _originx;
@@ -446,7 +446,7 @@ void ST77XX_zephyr_n::fillRect(int16_t x, int16_t y, int16_t w, int16_t h,
 }
 
 // fillRectVGradient	- fills area with vertical gradient
-void ST77XX_zephyr_n::fillRectVGradient(int16_t x, int16_t y, int16_t w, int16_t h,
+void ST77XX_zephyr::fillRectVGradient(int16_t x, int16_t y, int16_t w, int16_t h,
                                     uint16_t color1, uint16_t color2) {
   x += _originx;
   y += _originy;
@@ -538,7 +538,7 @@ void ST77XX_zephyr_n::fillRectVGradient(int16_t x, int16_t y, int16_t w, int16_t
 }
 
 // fillRectHGradient	- fills area with horizontal gradient
-void ST77XX_zephyr_n::fillRectHGradient(int16_t x, int16_t y, int16_t w, int16_t h,
+void ST77XX_zephyr::fillRectHGradient(int16_t x, int16_t y, int16_t w, int16_t h,
                                     uint16_t color1, uint16_t color2) {
   x += _originx;
   y += _originy;
@@ -616,12 +616,12 @@ void ST77XX_zephyr_n::fillRectHGradient(int16_t x, int16_t y, int16_t w, int16_t
 }
 
 // fillScreenVGradient - fills screen with vertical gradient
-void ST77XX_zephyr_n::fillScreenVGradient(uint16_t color1, uint16_t color2) {
+void ST77XX_zephyr::fillScreenVGradient(uint16_t color1, uint16_t color2) {
   fillRectVGradient(0, 0, _width, _height, color1, color2);
 }
 
 // fillScreenHGradient - fills screen with horizontal gradient
-void ST77XX_zephyr_n::fillScreenHGradient(uint16_t color1, uint16_t color2) {
+void ST77XX_zephyr::fillScreenHGradient(uint16_t color1, uint16_t color2) {
   fillRectHGradient(0, 0, _width, _height, color1, color2);
 }
 
@@ -633,7 +633,7 @@ void ST77XX_zephyr_n::fillScreenHGradient(uint16_t color1, uint16_t color2) {
 #define MADCTL_BGR 0x08
 #define MADCTL_MH 0x04
 
-void ST77XX_zephyr_n::setRotation(uint8_t m) {
+void ST77XX_zephyr::setRotation(uint8_t m) {
   _rotation = m % 4; // can't be higher than 3
   beginSPITransaction();
   writecommand_cont(ST77XX_MADCTL);
@@ -677,7 +677,7 @@ void ST77XX_zephyr_n::setRotation(uint8_t m) {
   cursor_y = 0;
 }
 
-void ST77XX_zephyr_n::setScrollMargins(uint16_t top, uint16_t bottom) {
+void ST77XX_zephyr::setScrollMargins(uint16_t top, uint16_t bottom) {
   UNUSED(top);
   UNUSED(bottom);
 #ifdef LATER
@@ -695,7 +695,7 @@ void ST77XX_zephyr_n::setScrollMargins(uint16_t top, uint16_t bottom) {
 }
 
 
-void ST77XX_zephyr_n::setScroll(uint16_t offset) {
+void ST77XX_zephyr::setScroll(uint16_t offset) {
   UNUSED(offset);
 #ifdef LATER
   beginSPITransaction();
@@ -705,12 +705,12 @@ void ST77XX_zephyr_n::setScroll(uint16_t offset) {
 #endif
 }
 
-void ST77XX_zephyr_n::invertDisplay(boolean i) {
+void ST77XX_zephyr::invertDisplay(boolean i) {
   beginSPITransaction();
   writecommand_last(i ? ST77XX_INVON : ST77XX_INVOFF);
   endSPITransaction();
 }
-void ST77XX_zephyr_n::setFrameRateControl(uint8_t mode) {
+void ST77XX_zephyr::setFrameRateControl(uint8_t mode) {
   // Do simple version
   beginSPITransaction(_SPI_CLOCK/4);
   writecommand_cont(ST77XX_FRMCTR1);
@@ -723,7 +723,7 @@ void ST77XX_zephyr_n::setFrameRateControl(uint8_t mode) {
 
 // Read Pixel at x,y and get back 16-bit packed color
 #define READ_PIXEL_PUSH_BYTE 0x7F
-uint16_t ST77XX_zephyr_n::readPixel(int16_t x, int16_t y) {
+uint16_t ST77XX_zephyr::readPixel(int16_t x, int16_t y) {
 #ifdef ENABLE_ST77XX_FRAMEBUFFER
   if (_use_fbtft) {
     x += _originx;
@@ -740,7 +740,7 @@ uint16_t ST77XX_zephyr_n::readPixel(int16_t x, int16_t y) {
 }
 // Now lets see if we can read in multiple pixels
 
-void ST77XX_zephyr_n::readRect(int16_t x, int16_t y, int16_t w, int16_t h,
+void ST77XX_zephyr::readRect(int16_t x, int16_t y, int16_t w, int16_t h,
                            uint16_t *pcolors) {
   // Use our Origin.
   x += _originx;
@@ -816,7 +816,7 @@ void ST77XX_zephyr_n::readRect(int16_t x, int16_t y, int16_t w, int16_t h,
 }
 
 // Now lets see if we can writemultiple pixels
-void ST77XX_zephyr_n::writeRect(int16_t x, int16_t y, int16_t w, int16_t h,
+void ST77XX_zephyr::writeRect(int16_t x, int16_t y, int16_t w, int16_t h,
                             const uint16_t *pcolors) {
 
   int16_t image_width = w;
@@ -951,11 +951,34 @@ void ST77XX_zephyr_n::writeRect(int16_t x, int16_t y, int16_t w, int16_t h,
   endSPITransaction();
 }
 
+// Experiment use the callback version (async) amd see if it is faster.
+// note this ignores if there is a frame buffer and clipping and....
+void ST77XX_zephyr::writeRectCB(int16_t x, int16_t y, int16_t w, int16_t h,
+                 const uint16_t *pcolors, void (*callback)(int result)){
+  beginSPITransaction();
+  setAddr(x, y, x + w - 1, y + h - 1);
+  writecommand_cont(ST77XX_RAMWR);
+  setDataMode();
+  struct spi_buf tx_buf = { .buf = (void*)pcolors, .len = (size_t)(w * h * 2) };
+  const struct spi_buf_set tx_buf_set = { .buffers = &tx_buf, .count = 1 };
+  _write_rect_cb = callback;
+  spi_transceive_cb(_spi_dev, &_config16, &tx_buf_set, nullptr, &spi_callback, (void*)this);
+
+}
+
+
+void ST77XX_zephyr::process_spi_callback(const struct device *dev, int result) {
+  // end spi transaction
+  UNUSED(dev);
+  endSPITransaction();
+
+  if (_write_rect_cb) (*_write_rect_cb)(result);
+}
 
 
 // Now lets see if we can writemultiple pixels
 //                                    screen rect
-void ST77XX_zephyr_n::writeSubImageRect(int16_t x, int16_t y, int16_t w, int16_t h, 
+void ST77XX_zephyr::writeSubImageRect(int16_t x, int16_t y, int16_t w, int16_t h, 
   int16_t image_offset_x, int16_t image_offset_y, int16_t image_width, int16_t image_height, const uint16_t *pcolors)
 {
   UNUSED(image_height);
@@ -1027,7 +1050,7 @@ void ST77XX_zephyr_n::writeSubImageRect(int16_t x, int16_t y, int16_t w, int16_t
   endSPITransaction();
 }
 
-void ST77XX_zephyr_n::writeSubImageRectBytesReversed(int16_t x, int16_t y, int16_t w, int16_t h, 
+void ST77XX_zephyr::writeSubImageRectBytesReversed(int16_t x, int16_t y, int16_t w, int16_t h, 
   int16_t image_offset_x, int16_t image_offset_y, int16_t image_width, int16_t image_height, const uint16_t *pcolors)
 {
   UNUSED(image_height);
@@ -1108,7 +1131,7 @@ void ST77XX_zephyr_n::writeSubImageRectBytesReversed(int16_t x, int16_t y, int16
 //					bitmap data in array at pixels, one byte per
 //pixel
 //					color palette data in array at palette
-void ST77XX_zephyr_n::writeRect8BPP(int16_t x, int16_t y, int16_t w, int16_t h,
+void ST77XX_zephyr::writeRect8BPP(int16_t x, int16_t y, int16_t w, int16_t h,
                                 const uint8_t *pixels,
                                 const uint16_t *palette) {
   // Serial.printf("\nWR8: %d %d %d %d %x\n", x, y, w, h, (uint32_t)pixels);
@@ -1196,7 +1219,7 @@ void ST77XX_zephyr_n::writeRect8BPP(int16_t x, int16_t y, int16_t w, int16_t h,
 //pixel
 //					color palette data in array at palette
 //					width must be at least 2 pixels
-void ST77XX_zephyr_n::writeRect4BPP(int16_t x, int16_t y, int16_t w, int16_t h,
+void ST77XX_zephyr::writeRect4BPP(int16_t x, int16_t y, int16_t w, int16_t h,
                                 const uint8_t *pixels,
                                 const uint16_t *palette) {
   // Simply call through our helper
@@ -1208,7 +1231,7 @@ void ST77XX_zephyr_n::writeRect4BPP(int16_t x, int16_t y, int16_t w, int16_t h,
 //pixel
 //					color palette data in array at palette
 //					width must be at least 4 pixels
-void ST77XX_zephyr_n::writeRect2BPP(int16_t x, int16_t y, int16_t w, int16_t h,
+void ST77XX_zephyr::writeRect2BPP(int16_t x, int16_t y, int16_t w, int16_t h,
                                 const uint8_t *pixels,
                                 const uint16_t *palette) {
   // Simply call through our helper
@@ -1221,7 +1244,7 @@ void ST77XX_zephyr_n::writeRect2BPP(int16_t x, int16_t y, int16_t w, int16_t h,
 //pixel
 //					color palette data in array at palette
 //					width must be at least 8 pixels
-void ST77XX_zephyr_n::writeRect1BPP(int16_t x, int16_t y, int16_t w, int16_t h,
+void ST77XX_zephyr::writeRect1BPP(int16_t x, int16_t y, int16_t w, int16_t h,
                                 const uint8_t *pixels,
                                 const uint16_t *palette) {
   // Simply call through our helper
@@ -1233,7 +1256,7 @@ void ST77XX_zephyr_n::writeRect1BPP(int16_t x, int16_t y, int16_t w, int16_t h,
 //					bitmap data in array at pixels
 //  Currently writeRect1BPP, writeRect2BPP, writeRect4BPP use this to do all of
 //  the work.
-void ST77XX_zephyr_n::writeRectNBPP(int16_t x, int16_t y, int16_t w, int16_t h,
+void ST77XX_zephyr::writeRectNBPP(int16_t x, int16_t y, int16_t w, int16_t h,
                                 uint8_t bits_per_pixel, const uint8_t *pixels,
                                 const uint16_t *palette) {
   // Serial.printf("\nWR8: %d %d %d %d %x\n", x, y, w, h, (uint32_t)pixels);
@@ -1340,7 +1363,7 @@ void ST77XX_zephyr_n::writeRectNBPP(int16_t x, int16_t y, int16_t w, int16_t h,
   endSPITransaction();
 }
 
-void ST77XX_zephyr_n::commandList(const uint8_t *addr)
+void ST77XX_zephyr::commandList(const uint8_t *addr)
 {
 	uint8_t  numCommands, numArgs;
 	uint16_t ms;
@@ -1373,7 +1396,7 @@ void ST77XX_zephyr_n::commandList(const uint8_t *addr)
 
 
 
-void  ST77XX_zephyr_n::begin(uint16_t width, uint16_t height, uint8_t mode, uint32_t spi_clock) {
+void  ST77XX_zephyr::begin(uint16_t width, uint16_t height, uint8_t mode, uint32_t spi_clock) {
   // verify SPI pins are valid;
   // allow user to say use current ones...
   _width = _screenWidth = width;
@@ -1386,7 +1409,7 @@ void  ST77XX_zephyr_n::begin(uint16_t width, uint16_t height, uint8_t mode, uint
   setRotation(0); 
 }
 
-void ST77XX_zephyr_n::common_init(const uint8_t *cmd_list) {
+void ST77XX_zephyr::common_init(const uint8_t *cmd_list) {
   // Serial.printf("_t3n::begin mosi:%d miso:%d SCLK:%d CS:%d DC:%d SPI clocks:
   // %lu %lu\n", _mosi, _miso, _sclk, _cs, _dc, _SPI_CLOCK, _SPI_CLOCK_READ);
   // Serial.flush();
@@ -1471,7 +1494,7 @@ POSSIBILITY OF SUCH DAMAGE.
 extern "C" const unsigned char glcdfont[];
 
 // Draw a circle outline
-void ST77XX_zephyr_n::drawCircle(int16_t x0, int16_t y0, int16_t r,
+void ST77XX_zephyr::drawCircle(int16_t x0, int16_t y0, int16_t r,
                              uint16_t color) {
   int16_t f = 1 - r;
   int16_t ddF_x = 1;
@@ -1505,7 +1528,7 @@ void ST77XX_zephyr_n::drawCircle(int16_t x0, int16_t y0, int16_t r,
   }
 }
 
-void ST77XX_zephyr_n::drawCircleHelper(int16_t x0, int16_t y0, int16_t r,
+void ST77XX_zephyr::drawCircleHelper(int16_t x0, int16_t y0, int16_t r,
                                    uint8_t cornername, uint16_t color) {
   int16_t f = 1 - r;
   int16_t ddF_x = 1;
@@ -1541,14 +1564,14 @@ void ST77XX_zephyr_n::drawCircleHelper(int16_t x0, int16_t y0, int16_t r,
   }
 }
 
-void ST77XX_zephyr_n::fillCircle(int16_t x0, int16_t y0, int16_t r,
+void ST77XX_zephyr::fillCircle(int16_t x0, int16_t y0, int16_t r,
                              uint16_t color) {
   drawFastVLine(x0, y0 - r, 2 * r + 1, color);
   fillCircleHelper(x0, y0, r, 3, 0, color);
 }
 
 // Used to do circles and roundrects
-void ST77XX_zephyr_n::fillCircleHelper(int16_t x0, int16_t y0, int16_t r,
+void ST77XX_zephyr::fillCircleHelper(int16_t x0, int16_t y0, int16_t r,
                                    uint8_t cornername, int16_t delta,
                                    uint16_t color) {
 
@@ -1580,7 +1603,7 @@ void ST77XX_zephyr_n::fillCircleHelper(int16_t x0, int16_t y0, int16_t r,
 }
 
 // Bresenham's algorithm - thx wikpedia
-void ST77XX_zephyr_n::drawLine(int16_t x0, int16_t y0, int16_t x1, int16_t y1,
+void ST77XX_zephyr::drawLine(int16_t x0, int16_t y0, int16_t x1, int16_t y1,
                            uint16_t color) {
   if (y0 == y1) {
     if (x1 > x0) {
@@ -1680,7 +1703,7 @@ void ST77XX_zephyr_n::drawLine(int16_t x0, int16_t y0, int16_t x1, int16_t y1,
 }
 
 // Draw a rectangle
-void ST77XX_zephyr_n::drawRect(int16_t x, int16_t y, int16_t w, int16_t h,
+void ST77XX_zephyr::drawRect(int16_t x, int16_t y, int16_t w, int16_t h,
                            uint16_t color) {
 #ifdef ENABLE_ST77XX_FRAMEBUFFER
   if (_use_fbtft) {
@@ -1702,7 +1725,7 @@ void ST77XX_zephyr_n::drawRect(int16_t x, int16_t y, int16_t w, int16_t h,
 }
 
 // Draw a rounded rectangle
-void ST77XX_zephyr_n::drawRoundRect(int16_t x, int16_t y, int16_t w, int16_t h,
+void ST77XX_zephyr::drawRoundRect(int16_t x, int16_t y, int16_t w, int16_t h,
                                 int16_t r, uint16_t color) {
   // smarter version
   drawFastHLine(x + r, y, w - 2 * r, color);         // Top
@@ -1717,7 +1740,7 @@ void ST77XX_zephyr_n::drawRoundRect(int16_t x, int16_t y, int16_t w, int16_t h,
 }
 
 // Fill a rounded rectangle
-void ST77XX_zephyr_n::fillRoundRect(int16_t x, int16_t y, int16_t w, int16_t h,
+void ST77XX_zephyr::fillRoundRect(int16_t x, int16_t y, int16_t w, int16_t h,
                                 int16_t r, uint16_t color) {
   // smarter version
   fillRect(x + r, y, w - 2 * r, h, color);
@@ -1728,7 +1751,7 @@ void ST77XX_zephyr_n::fillRoundRect(int16_t x, int16_t y, int16_t w, int16_t h,
 }
 
 // Draw a triangle
-void ST77XX_zephyr_n::drawTriangle(int16_t x0, int16_t y0, int16_t x1, int16_t y1,
+void ST77XX_zephyr::drawTriangle(int16_t x0, int16_t y0, int16_t x1, int16_t y1,
                                int16_t x2, int16_t y2, uint16_t color) {
   drawLine(x0, y0, x1, y1, color);
   drawLine(x1, y1, x2, y2, color);
@@ -1736,7 +1759,7 @@ void ST77XX_zephyr_n::drawTriangle(int16_t x0, int16_t y0, int16_t x1, int16_t y
 }
 
 // Fill a triangle
-void ST77XX_zephyr_n::fillTriangle(int16_t x0, int16_t y0, int16_t x1, int16_t y1,
+void ST77XX_zephyr::fillTriangle(int16_t x0, int16_t y0, int16_t x1, int16_t y1,
                                int16_t x2, int16_t y2, uint16_t color) {
 
   int16_t a, b, y, last;
@@ -1816,7 +1839,7 @@ void ST77XX_zephyr_n::fillTriangle(int16_t x0, int16_t y0, int16_t x1, int16_t y
   }
 }
 
-void ST77XX_zephyr_n::drawBitmap(int16_t x, int16_t y, const uint8_t *bitmap,
+void ST77XX_zephyr::drawBitmap(int16_t x, int16_t y, const uint8_t *bitmap,
                              int16_t w, int16_t h, uint16_t color) {
 
   int16_t i, j, byteWidth = (w + 7) / 8;
@@ -1833,9 +1856,9 @@ void ST77XX_zephyr_n::drawBitmap(int16_t x, int16_t y, const uint8_t *bitmap,
 // overwrite functions from class Print:
 
 
-size_t ST77XX_zephyr_n::write(uint8_t c) { return write(&c, 1); }
+size_t ST77XX_zephyr::write(uint8_t c) { return write(&c, 1); }
 
-size_t ST77XX_zephyr_n::write(const uint8_t *buffer, size_t size) {
+size_t ST77XX_zephyr::write(const uint8_t *buffer, size_t size) {
 #ifdef LATER_TEXT
   // Lets try to handle some of the special font centering code that was done
   // for default fonts.
@@ -1922,7 +1945,7 @@ size_t ST77XX_zephyr_n::write(const uint8_t *buffer, size_t size) {
 
 // Draw a character
 #ifdef LATER_TEXT
-void ST77XX_zephyr_n::drawChar(int16_t x, int16_t y, unsigned char c,
+void ST77XX_zephyr::drawChar(int16_t x, int16_t y, unsigned char c,
                            uint16_t fgcolor, uint16_t bgcolor, uint8_t size_x,
                            uint8_t size_y) {
   if ((x >= _width) ||              // Clip right
@@ -2151,7 +2174,7 @@ void ST77XX_zephyr_n::drawChar(int16_t x, int16_t y, unsigned char c,
   }
 }
 
-void ST77XX_zephyr_n::setFont(const ILI9341_t3_font_t &f) {
+void ST77XX_zephyr::setFont(const ILI9341_t3_font_t &f) {
   font = &f;
   _gfx_last_char_x_write = 0; // Don't use cached data here
   if (gfxFont) {
@@ -2174,7 +2197,7 @@ void ST77XX_zephyr_n::setFont(const ILI9341_t3_font_t &f) {
 }
 
 // Maybe support GFX Fonts as well?
-void ST77XX_zephyr_n::setFont(const GFXfont *f) {
+void ST77XX_zephyr::setFont(const GFXfont *f) {
   font = NULL;                // turn off the other font...
   _gfx_last_char_x_write = 0; // Don't use cached data here
   if (f == gfxFont)
@@ -2277,7 +2300,7 @@ static uint32_t fetchbits_signed(const uint8_t *p, uint32_t index,
   return (int32_t)val;
 }
 
-uint32_t ST77XX_zephyr_n::fetchpixel(const uint8_t *p, uint32_t index, uint32_t x) {
+uint32_t ST77XX_zephyr::fetchpixel(const uint8_t *p, uint32_t index, uint32_t x) {
   // The byte
   uint8_t b = p[index >> 3];
   // Shift to LSB position and mask to get value
@@ -2286,7 +2309,7 @@ uint32_t ST77XX_zephyr_n::fetchpixel(const uint8_t *p, uint32_t index, uint32_t 
   return (b >> s) & fontbppmask;
 }
 
-void ST77XX_zephyr_n::drawFontChar(unsigned int c) {
+void ST77XX_zephyr::drawFontChar(unsigned int c) {
   uint32_t bitoffset;
   const uint8_t *data;
 
@@ -2804,7 +2827,7 @@ void ST77XX_zephyr_n::drawFontChar(unsigned int c) {
 
 // strPixelLen			- gets pixel length of given ASCII string
 // note, it will exit if end of str or cb has been reached. 
-int16_t ST77XX_zephyr_n::strPixelLen(const char *str, uint16_t cb) {
+int16_t ST77XX_zephyr::strPixelLen(const char *str, uint16_t cb) {
   //	//Serial.printf("strPixelLen %s\n", str);
   if (!str)
     return (0);
@@ -2892,7 +2915,7 @@ int16_t ST77XX_zephyr_n::strPixelLen(const char *str, uint16_t cb) {
   return (maxlen);
 }
 
-void ST77XX_zephyr_n::charBounds(char c, int16_t *x, int16_t *y, int16_t *minx,
+void ST77XX_zephyr::charBounds(char c, int16_t *x, int16_t *y, int16_t *minx,
                              int16_t *miny, int16_t *maxx, int16_t *maxy) {
 
   // BUGBUG:: Not handling offset/clip
@@ -3023,7 +3046,7 @@ void ST77XX_zephyr_n::charBounds(char c, int16_t *x, int16_t *y, int16_t *minx,
 }
 
 // Add in Adafruit versions of text bounds calculations.
-void ST77XX_zephyr_n::getTextBounds(const uint8_t *buffer, uint16_t len, int16_t x,
+void ST77XX_zephyr::getTextBounds(const uint8_t *buffer, uint16_t len, int16_t x,
                                 int16_t y, int16_t *x1, int16_t *y1,
                                 uint16_t *w, uint16_t *h) {
   *x1 = x;
@@ -3049,7 +3072,7 @@ void ST77XX_zephyr_n::getTextBounds(const uint8_t *buffer, uint16_t len, int16_t
   //Serial.printf("GTB %d %d %d %d\n", *x1, *y1, *w, *h);
 }
 
-void ST77XX_zephyr_n::getTextBounds(const char *str, int16_t x, int16_t y,
+void ST77XX_zephyr::getTextBounds(const char *str, int16_t x, int16_t y,
                                 int16_t *x1, int16_t *y1, uint16_t *w,
                                 uint16_t *h) {
   uint8_t c; // Current character
@@ -3076,7 +3099,7 @@ void ST77XX_zephyr_n::getTextBounds(const char *str, int16_t x, int16_t y,
   //Serial.printf("GTB %d %d %u %u\n", *x1, *y1, *w, *h);
 }
 
-void ST77XX_zephyr_n::getTextBounds(const String &str, int16_t x, int16_t y,
+void ST77XX_zephyr::getTextBounds(const String &str, int16_t x, int16_t y,
                                 int16_t *x1, int16_t *y1, uint16_t *w,
                                 uint16_t *h) {
   if (str.length() != 0) {
@@ -3084,7 +3107,7 @@ void ST77XX_zephyr_n::getTextBounds(const String &str, int16_t x, int16_t y,
   }
 }
 
-uint16_t ST77XX_zephyr_n::measureTextWidth(const uint8_t* text, int n) {
+uint16_t ST77XX_zephyr::measureTextWidth(const uint8_t* text, int n) {
   int16_t x1, y1;
   uint16_t w, h;
   if (n == 0)  n = strlen((const char *)text);
@@ -3092,7 +3115,7 @@ uint16_t ST77XX_zephyr_n::measureTextWidth(const uint8_t* text, int n) {
   return w;
 }
 
-uint16_t ST77XX_zephyr_n::measureTextHeight(const uint8_t* text, int n) {
+uint16_t ST77XX_zephyr::measureTextHeight(const uint8_t* text, int n) {
   int16_t x1, y1;
   uint16_t w, h;
   if (n == 0)  n = strlen((const char *)text);
@@ -3101,7 +3124,7 @@ uint16_t ST77XX_zephyr_n::measureTextHeight(const uint8_t* text, int n) {
 }
 
 
-void ST77XX_zephyr_n::drawFontPixel(uint8_t alpha, uint32_t x, uint32_t y) {
+void ST77XX_zephyr::drawFontPixel(uint8_t alpha, uint32_t x, uint32_t y) {
   // Adjust alpha based on the number of alpha levels supported by the font
   // (based on bpp)
   // Note: Implemented look-up table for alpha, but made absolutely no
@@ -3114,7 +3137,7 @@ void ST77XX_zephyr_n::drawFontPixel(uint8_t alpha, uint32_t x, uint32_t y) {
   Pixel(x, y, (uint16_t)((result >> 16) | result));
 }
 
-void ST77XX_zephyr_n::drawFontBits(bool opaque, uint32_t bits, uint32_t numbits,
+void ST77XX_zephyr::drawFontBits(bool opaque, uint32_t bits, uint32_t numbits,
                                int32_t x, int32_t y, uint32_t repeat) {
   if (bits == 0) {
     if (opaque) {
@@ -3161,7 +3184,7 @@ void ST77XX_zephyr_n::drawFontBits(bool opaque, uint32_t bits, uint32_t numbits,
   }
 }
 
-void ST77XX_zephyr_n::drawGFXFontChar(unsigned int c) {
+void ST77XX_zephyr::drawGFXFontChar(unsigned int c) {
   // Lets do Adafruit GFX character output here as well
   if (c == '\r')
     return;
@@ -3548,7 +3571,7 @@ void ST77XX_zephyr_n::drawGFXFontChar(unsigned int c) {
 //	int16_t   _gfx_last_cursor_x, _gfx_last_cursor_y;
 //	int16_t	 _gfx_last_x_overlap = 0;
 
-bool ST77XX_zephyr_n::gfxFontLastCharPosFG(int16_t x, int16_t y) {
+bool ST77XX_zephyr::gfxFontLastCharPosFG(int16_t x, int16_t y) {
   GFXglyph *glyph = gfxFont->glyph + (_gfx_c_last - gfxFont->first);
 
   uint8_t w = glyph->width, h = glyph->height;
@@ -3575,14 +3598,14 @@ bool ST77XX_zephyr_n::gfxFontLastCharPosFG(int16_t x, int16_t y) {
           (0x80 >> (pixel_bit_offset & 0x7)));
 }
 
-void ST77XX_zephyr_n::setCursor(int16_t x, int16_t y, bool autoCenter) {
+void ST77XX_zephyr::setCursor(int16_t x, int16_t y, bool autoCenter) {
   _center_x_text = autoCenter; // remember the state.
   _center_y_text = autoCenter; // remember the state.
-  if (x == ST77XX_zephyr_n::CENTER) {
+  if (x == ST77XX_zephyr::CENTER) {
     _center_x_text = true;
     x = _width / 2;
   }
-  if (y == ST77XX_zephyr_n::CENTER) {
+  if (y == ST77XX_zephyr::CENTER) {
     _center_y_text = true;
     y = _height / 2;
   }
@@ -3606,28 +3629,28 @@ void ST77XX_zephyr_n::setCursor(int16_t x, int16_t y, bool autoCenter) {
   _gfx_last_char_x_write = 0; // Don't use cached data here
 }
 
-void ST77XX_zephyr_n::getCursor(int16_t *x, int16_t *y) {
+void ST77XX_zephyr::getCursor(int16_t *x, int16_t *y) {
   *x = cursor_x;
   *y = cursor_y;
 }
 
-void ST77XX_zephyr_n::setTextSize(uint8_t s_x, uint8_t s_y) {
+void ST77XX_zephyr::setTextSize(uint8_t s_x, uint8_t s_y) {
   textsize_x = (s_x > 0) ? s_x : 1;
   textsize_y = (s_y > 0) ? s_y : 1;
   _gfx_last_char_x_write = 0; // Don't use cached data here
 }
 
-uint8_t ST77XX_zephyr_n::getTextSize() {
+uint8_t ST77XX_zephyr::getTextSize() {
   return textsize_x; // BUGBUG:: two values now...
 }
 
-void ST77XX_zephyr_n::setTextColor(uint16_t c) {
+void ST77XX_zephyr::setTextColor(uint16_t c) {
   // For 'transparent' background, we'll set the bg
   // to the same as fg instead of using a flag
   textcolor = textbgcolor = c;
 }
 
-void ST77XX_zephyr_n::setTextColor(uint16_t c, uint16_t b) {
+void ST77XX_zephyr::setTextColor(uint16_t c, uint16_t b) {
   textcolor = c;
   textbgcolor = b;
   // pre-expand colors for fast alpha-blending later
@@ -3637,13 +3660,13 @@ void ST77XX_zephyr_n::setTextColor(uint16_t c, uint16_t b) {
       (textbgcolor | (textbgcolor << 16)) & 0b00000111111000001111100000011111;
 }
 
-void ST77XX_zephyr_n::setTextWrap(boolean w) { wrap = w; }
+void ST77XX_zephyr::setTextWrap(boolean w) { wrap = w; }
 
-boolean ST77XX_zephyr_n::getTextWrap() { return wrap; }
+boolean ST77XX_zephyr::getTextWrap() { return wrap; }
 
-uint8_t ST77XX_zephyr_n::getRotation(void) { return _rotation; }
+uint8_t ST77XX_zephyr::getRotation(void) { return _rotation; }
 
-void ST77XX_zephyr_n::sleep(bool enable) {
+void ST77XX_zephyr::sleep(bool enable) {
   beginSPITransaction();
   if (enable) {
     writecommand_cont(ST77XX_DISPOFF);
@@ -3661,19 +3684,19 @@ void ST77XX_zephyr_n::sleep(bool enable) {
 ** Function name:           setTextDatum
 ** Description:             Set the text position reference datum
 ***************************************************************************************/
-void ST77XX_zephyr_n::setTextDatum(uint8_t d) { textdatum = d; }
+void ST77XX_zephyr::setTextDatum(uint8_t d) { textdatum = d; }
 
 /***************************************************************************************
 ** Function name:           drawNumber
 ** Description:             draw a long integer
 ***************************************************************************************/
-int16_t ST77XX_zephyr_n::drawNumber(long long_num, int poX, int poY) {
+int16_t ST77XX_zephyr::drawNumber(long long_num, int poX, int poY) {
   char str[14];
   ltoa(long_num, str, 10);
   return drawString(str, poX, poY);
 }
 
-int16_t ST77XX_zephyr_n::drawFloat(float floatNumber, int dp, int poX, int poY) {
+int16_t ST77XX_zephyr::drawFloat(float floatNumber, int dp, int poX, int poY) {
   char str[14];         // Array to contain decimal string
   uint8_t ptr = 0;      // Initialise pointer for array
   int8_t digits = 1;    // Count the digits to avoid array overflow
@@ -3749,14 +3772,14 @@ int16_t ST77XX_zephyr_n::drawFloat(float floatNumber, int dp, int poX, int poY) 
 ** Description :            draw string with padding if it is defined
 ***************************************************************************************/
 // Without font number, uses font set by setTextFont()
-int16_t ST77XX_zephyr_n::drawString(const String &string, int poX, int poY) {
+int16_t ST77XX_zephyr::drawString(const String &string, int poX, int poY) {
   int16_t len = string.length() + 2;
   char buffer[80];  // should never get this big..
   string.toCharArray(buffer, len);
   return drawString(buffer, len-2, poX, poY);
 }
 
-int16_t ST77XX_zephyr_n::drawString(const char string[], int16_t len, int poX, int poY) {
+int16_t ST77XX_zephyr::drawString(const char string[], int16_t len, int poX, int poY) {
   int16_t sumX = 0;
   uint8_t padding = 1 /*, baseline = 0*/;
 
@@ -3844,7 +3867,7 @@ int16_t ST77XX_zephyr_n::drawString(const char string[], int16_t len, int poX, i
   return sumX;
 }
 
-void ST77XX_zephyr_n::scrollTextArea(uint8_t scrollSize) {
+void ST77XX_zephyr::scrollTextArea(uint8_t scrollSize) {
   uint16_t awColors[scroll_width];
   for (int y = scroll_y + scrollSize; y < (scroll_y + scroll_height); y++) {
     readRect(scroll_x, y, scroll_width, 1, awColors);
@@ -3854,7 +3877,7 @@ void ST77XX_zephyr_n::scrollTextArea(uint8_t scrollSize) {
            scrollSize, scrollbgcolor);
 }
 
-void ST77XX_zephyr_n::setScrollTextArea(int16_t x, int16_t y, int16_t w,
+void ST77XX_zephyr::setScrollTextArea(int16_t x, int16_t y, int16_t w,
                                     int16_t h) {
   scroll_x = x;
   scroll_y = y;
@@ -3862,16 +3885,16 @@ void ST77XX_zephyr_n::setScrollTextArea(int16_t x, int16_t y, int16_t w,
   scroll_height = h;
 }
 
-void ST77XX_zephyr_n::setScrollBackgroundColor(uint16_t color) {
+void ST77XX_zephyr::setScrollBackgroundColor(uint16_t color) {
   scrollbgcolor = color;
   fillRect(scroll_x, scroll_y, scroll_width, scroll_height, scrollbgcolor);
 }
 
-void ST77XX_zephyr_n::enableScroll(void) { scrollEnable = true; }
+void ST77XX_zephyr::enableScroll(void) { scrollEnable = true; }
 
-void ST77XX_zephyr_n::disableScroll(void) { scrollEnable = false; }
+void ST77XX_zephyr::disableScroll(void) { scrollEnable = false; }
 
-void ST77XX_zephyr_n::resetScrollBackgroundColor(uint16_t color) {
+void ST77XX_zephyr::resetScrollBackgroundColor(uint16_t color) {
   scrollbgcolor = color;
 }
 #endif //LATER TEXT
@@ -3880,7 +3903,7 @@ void ST77XX_zephyr_n::resetScrollBackgroundColor(uint16_t color) {
 //=======================================================================
 // Add optinal support for using frame buffer to speed up complex outputs
 //=======================================================================
-void ST77XX_zephyr_n::setFrameBuffer(uint16_t *frame_buffer) {
+void ST77XX_zephyr::setFrameBuffer(uint16_t *frame_buffer) {
 #ifdef ENABLE_ST77XX_FRAMEBUFFER
   _pfbtft = frame_buffer;
  // _dma_state &= ~ST77XX_DMA_INIT; // clear that we init the dma chain as our
@@ -3890,7 +3913,7 @@ void ST77XX_zephyr_n::setFrameBuffer(uint16_t *frame_buffer) {
 }
 
 
-uint8_t ST77XX_zephyr_n::useFrameBuffer(
+uint8_t ST77XX_zephyr::useFrameBuffer(
     boolean b) // use the frame buffer?  First call will allocate
 {
 #ifdef ENABLE_ST77XX_FRAMEBUFFER
@@ -3919,7 +3942,7 @@ uint8_t ST77XX_zephyr_n::useFrameBuffer(
 #endif
 }
 
-void ST77XX_zephyr_n::freeFrameBuffer(void) // explicit call to release the buffer
+void ST77XX_zephyr::freeFrameBuffer(void) // explicit call to release the buffer
 {
 #ifdef ENABLE_ST77XX_FRAMEBUFFER
   if (_we_allocated_buffer) {
@@ -3930,7 +3953,7 @@ void ST77XX_zephyr_n::freeFrameBuffer(void) // explicit call to release the buff
   }
 #endif
 }
-void ST77XX_zephyr_n::updateScreen(void) // call to say update the screen now.
+void ST77XX_zephyr::updateScreen(void) // call to say update the screen now.
 {
 // Not sure if better here to check flag or check existence of buffer.
 // Will go by buffer as maybe can do interesting things?
@@ -3999,7 +4022,7 @@ void ST77XX_zephyr_n::updateScreen(void) // call to say update the screen now.
 #endif
 }
 
-bool ST77XX_zephyr_n::updateScreenAsync(bool update_cont) {
+bool ST77XX_zephyr::updateScreenAsync(bool update_cont) {
   if (update_cont) return false; // not implemented
   #if defined(CONFIG_SPI_ASYNC) && defined(CONFIG_SPI_STM32_INTERRUPT)
   #ifdef ENABLE_ST77XX_FRAMEBUFFER
@@ -4023,20 +4046,20 @@ bool ST77XX_zephyr_n::updateScreenAsync(bool update_cont) {
   #endif  
   return true;
 }
-void ST77XX_zephyr_n::waitUpdateAsyncComplete(void) {
+void ST77XX_zephyr::waitUpdateAsyncComplete(void) {
   #if defined(CONFIG_SPI_ASYNC) && defined(CONFIG_SPI_STM32_INTERRUPT)
   while (_async_update_active) {}
   #endif
 }
 
-boolean ST77XX_zephyr_n::asyncUpdateActive(void) { return _async_update_active; }
+boolean ST77XX_zephyr::asyncUpdateActive(void) { return _async_update_active; }
 
-void ST77XX_zephyr_n::async_callback(const struct device *dev, int result, void *data) {
-  ((ST77XX_zephyr_n*)data)->process_async_callback();
+void ST77XX_zephyr::async_callback(const struct device *dev, int result, void *data) {
+  ((ST77XX_zephyr*)data)->process_async_callback();
 
 }
 
-void ST77XX_zephyr_n::process_async_callback(void) {
+void ST77XX_zephyr::process_async_callback(void) {
   endSPITransaction(); 
   _async_update_active = false; 
 }

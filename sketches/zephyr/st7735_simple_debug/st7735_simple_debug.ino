@@ -5,7 +5,7 @@
 
 //ST7796_zephyr tft = ST7796_zephyr(nullptr, TFT_CS, TFT_DC, TFT_RST);
 ST7789_zephyr tft = ST7789_zephyr(nullptr, TFT_CS, TFT_DC, TFT_RST);
-//ST77XX_zephyr_n tft = ST77XX_zephyr_n(&SPI, TFT_CS, TFT_DC, TFT_RST);
+//ST77XX_zephyr tft = ST77XX_zephyr(&SPI, TFT_CS, TFT_DC, TFT_RST);
 extern void tftPrintTest();
 extern void testdrawtext(const char *text, uint16_t color);
 extern void testlines(uint16_t color);

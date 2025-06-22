@@ -13,7 +13,7 @@
 //#include "font_Crystal.h"
 //#include "font_ChanceryItalic.h"
 
-#define CENTER ST77XX_zephyr_n::CENTER
+#define CENTER ST77XX_zephyr::CENTER
 
 // maybe a few GFX FOnts?
 #include <Fonts/FreeMono9pt7b.h>

@@ -83,17 +83,38 @@ void setup() {
   cam.setHorizontalMirror(false);
 }
 
+volatile bool write_rect_complete = false;
+void write_rect_complete_cb(int result) {
+  UNUSED(result);
+  write_rect_complete = true;
+
+}
+
+bool use_writeRectCB = true;
+
 void loop() {
   // put your main code here, to run repeatedly:
   FrameBuffer fb;
-  Serial.print("Call grabFrame");
+  //Serial.print("Call grabFrame");
   bool frame_received = cam.grabFrame(fb);
-  Serial.println(frame_received? " true" : " false");
+  //Serial.println(frame_received? " true" : " false");
   if (frame_received) {
     digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
-    tft.writeRect(0, 0, CAMERA_WIDTH, CAMERA_HEIGHT, (const uint16_t*)fb.getBuffer());
+    uint32_t start_time = micros();
+    if (use_writeRectCB) {
+      write_rect_complete = false;
+      tft.writeRectCB(0, 0, CAMERA_WIDTH, CAMERA_HEIGHT, (const uint16_t*)fb.getBuffer(), &write_rect_complete_cb);
+      while (!write_rect_complete) delay(1);
+    } else {
+      tft.writeRect(0, 0, CAMERA_WIDTH, CAMERA_HEIGHT, (const uint16_t*)fb.getBuffer());
+    }
+    Serial.println(micros()-start_time);
     //tft.writeSubImageRectBytesReversed(0, 0, 320, 240, 0, 0, 320, 240, (const uint16_t*)fb.getBuffer());
     //tft.writeSubImageRect(0, 0, 320, 240, 0, 0, 320, 240, (const uint16_t*)fb.getBuffer());
     cam.releaseFrame(fb);
+  }
+  if (Serial.available()) {
+    while (Serial.read() != -1) {}
+    use_writeRectCB = !use_writeRectCB;
   }
 }

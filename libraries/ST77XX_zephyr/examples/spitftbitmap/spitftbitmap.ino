@@ -72,15 +72,15 @@ void setup(void) {
   tft.setTextColor(ST77XX_BLACK);
   tft.setTextSize(2);
   tft.fillScreen(ST77XX_RED);
-  tft.setCursor(ST77XX_zephyr_n::CENTER, ST77XX_zephyr_n::CENTER);
+  tft.setCursor(ST77XX_zephyr::CENTER, ST77XX_zephyr::CENTER);
   tft.print("RED");
   delay(500);
   tft.fillScreen(ST77XX_GREEN);
-  tft.setCursor(ST77XX_zephyr_n::CENTER, ST77XX_zephyr_n::CENTER);
+  tft.setCursor(ST77XX_zephyr::CENTER, ST77XX_zephyr::CENTER);
   tft.print("GREEN");
   delay(500);
   tft.fillScreen(ST77XX_BLUE);
-  tft.setCursor(ST77XX_zephyr_n::CENTER, ST77XX_zephyr_n::CENTER);
+  tft.setCursor(ST77XX_zephyr::CENTER, ST77XX_zephyr::CENTER);
   tft.print("BLUE");
   delay(500);
   tft.fillScreen(ST77XX_BLACK);
