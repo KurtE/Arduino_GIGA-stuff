@@ -1,36 +1,14 @@
-#include <ILI9341_GIGA_zephyr.h>
-#include "camera.h"
+#include "zephyrInternal.h"
+ static const struct gpio_dt_spec arduino_pins[] = {DT_FOREACH_PROP_ELEM_SEP(
+   DT_PATH(zephyr_user), digital_pin_gpios, GPIO_DT_SPEC_GET_BY_IDX, (, ))};
 
-Camera cam;
 
-#ifdef ARDUINO_PORTENTA_H7
-#ifdef ZEPHYR_PINNAMES_H
-#define TFT_DC PC_6
-#define TFT_RST PC_7
-#define TFT_CS PG_7
-#else
-#define TFT_DC 5
-#define TFT_RST 4
-#define TFT_CS 3
-#endif
-ILI9341_GIGA_n tft(&SPI, TFT_CS, TFT_DC, TFT_RST);
-#else
-#define TFT_DC 9
-#define TFT_RST 8
-#define TFT_CS 10
-ILI9341_GIGA_n tft(&SPI1, TFT_CS, TFT_DC, TFT_RST);
-#endif
+  void pinModeAnalog(pin_size_t pinNumber) {
+     gpio_pin_configure_dt(&arduino_pins[pinNumber],
+                           GPIO_INPUT | GPIO_ACTIVE_HIGH | GPIO_MODE_ANALOG);
+ }
+ 
 
-void fatal_error(const char *msg) {
-  Serial.println(msg);
-  pinMode(LED_BUILTIN, OUTPUT);
-  while (1) {
-    digitalWrite(LED_BUILTIN, HIGH);
-    delay(100);
-    digitalWrite(LED_BUILTIN, LOW);
-    delay(100);
-  }
-}
 
 
 void print_gpio_regs(const char *name, GPIO_TypeDef *port) {
@@ -103,63 +81,58 @@ void show_all_gpio_regs() {
   print_gpio_regs("F", (GPIO_TypeDef *)GPIOF_BASE);
   print_gpio_regs("G", (GPIO_TypeDef *)GPIOG_BASE);
   print_gpio_regs("H", (GPIO_TypeDef *)GPIOH_BASE);
-  print_PinConfig("H", (GPIO_TypeDef *)GPIOH_BASE, "M");
-  print_PinConfig("H", (GPIO_TypeDef *)GPIOH_BASE, "AL");
-  print_PinConfig("H", (GPIO_TypeDef *)GPIOH_BASE, "AH");
   print_gpio_regs("I", (GPIO_TypeDef *)GPIOI_BASE);
   print_gpio_regs("J", (GPIO_TypeDef *)GPIOJ_BASE);
-  print_PinConfig("J", (GPIO_TypeDef *)GPIOJ_BASE, "M");
-  print_PinConfig("J", (GPIO_TypeDef *)GPIOJ_BASE, "AL");
-  print_PinConfig("J", (GPIO_TypeDef *)GPIOJ_BASE, "AH");
   print_gpio_regs("K", (GPIO_TypeDef *)GPIOK_BASE);
 }
 
 
-
 void setup() {
-  printk("Setup called\n");
-  pinMode(LED_BUILTIN, OUTPUT);
   Serial.begin(115200);
   while (!Serial && millis() < 5000) {}
-  printk("After Serial begin and wait\n");
+ delay(250);
+  //Serial.println((uint32_t)A0);
+  //Serial.println((uint32_t)A1);
+  //Serial.println((uint32_t)A2);
+  //Serial.println((uint32_t)A3);
+  Serial.println((uint32_t)A4);
+  Serial.println((uint32_t)A5);
+  Serial.println((uint32_t)A6);
+  Serial.println((uint32_t)A7);
+  
+  // hack to see if we need to set these pins to Analog mode
 
-  // put your setup code here, to run once:
-  Serial.println("\n*** start display camera image on ILI9341 ***");
-  if (Serial) show_all_gpio_regs();
-  printk("Before tft.begin\n");
-  tft.begin(16000000);
-  Serial.println("After tft.begin");
-  tft.setRotation(1);
-  Serial.println("After Set rotation");
-  tft.fillScreen(ILI9341_BLACK);
-  Serial.println("After first fill Screen");
-  delay(500);
-  tft.fillScreen(ILI9341_RED);
-  delay(500);
-  tft.fillScreen(ILI9341_GREEN);
-  delay(500);
-  tft.fillScreen(ILI9341_BLUE);
-  delay(500);
-  tft.fillScreen(ILI9341_BLACK);
-  delay(500);
-  Serial.println("Start Camera");
-  if (!cam.begin(320, 240, CAMERA_RGB565, false)) {
-    fatal_error("Camera begin failed");
-  }
-  cam.setVerticalFlip(false);
-  Serial.println("After set verical flip false");
-  cam.setHorizontalMirror(false);
-  Serial.println("After set Horizontal Mirror false");
+  //pinModeAnalog(8);
+  //pinModeAnalog(10);
+  // lets try setting C2/C3 to analog
+  uint32_t moder = GPIOC->MODER;
+  moder |= (3 << (2*2)) | (3 << (3 * 2)); // C2/C3 to analog mode
+  GPIOC->MODER = moder;
+  printk("MODER: %x %p %p %x\n", moder, &(GPIOC->MODER), (void*)GPIOC_BASE, GPIOC->MODER);
+  moder = GPIOA->MODER;
+  moder |= (3 << (4*2)) | (3 << (6 * 2)); // C2/C3 to analog mode
+  GPIOA->MODER = moder;
+  printk("MODER: %x %p %p %x\n", moder, &(GPIOA->MODER), (void*)GPIOA_BASE, GPIOA->MODER);
+
+//  pinModeAnalog(21);
+  show_all_gpio_regs();
 }
 
 void loop() {
   // put your main code here, to run repeatedly:
-  FrameBuffer fb;
-  if (cam.grabFrame(fb)) {
-    digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
-    tft.writeRect(0, 0, 320, 240, (const uint16_t*)fb.getBuffer());
-    //tft.writeSubImageRectBytesReversed(0, 0, 320, 240, 0, 0, 320, 240, (const uint16_t*)fb.getBuffer());
-    //tft.writeSubImageRect(0, 0, 320, 240, 0, 0, 320, 240, (const uint16_t*)fb.getBuffer());
-    cam.releaseFrame(fb);
+  Serial.print("A0: "); Serial.print(analogRead(A0));  Serial.print(" "); Serial.print(analogRead(PA_0C));
+  Serial.print(" - A1: ");Serial.print(analogRead(A1)); Serial.print(" "); Serial.print(analogRead(PA_1C));
+  Serial.print(" - A2: ");Serial.print(analogRead(A2)); Serial.print(" "); Serial.print(analogRead(PC_2C));
+  Serial.print(" - A3: ");Serial.print(analogRead(A3)); Serial.print(" "); Serial.print(analogRead(PC_3C));
+  Serial.print(" - A4: ");Serial.print(analogRead(A4)); Serial.print(" "); Serial.print(analogRead(PC_2));
+  Serial.print(" - A5: ");Serial.print(analogRead(A5)); Serial.print(" "); Serial.print(analogRead(PC_3));
+  Serial.print(" - A6: ");Serial.print(analogRead(A6)); Serial.print(" "); Serial.print(analogRead(PA_4));
+  Serial.print(" - A7: ");Serial.print(analogRead(A7)); Serial.print(" "); Serial.print(analogRead(PA_6));
+  Serial.println();
+  delay(250);
+  if (Serial.available()) {
+    while (Serial.read() != -1 ) ;
+    while (Serial.read() == -1 ) ;
+    while (Serial.read() != -1 ) ;
   }
 }

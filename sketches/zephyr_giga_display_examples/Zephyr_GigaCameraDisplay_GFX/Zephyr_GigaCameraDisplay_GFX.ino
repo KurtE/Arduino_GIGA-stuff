@@ -18,7 +18,7 @@ uint16_t color565(uint8_t r, uint8_t g, uint8_t b) {
 
 #define CAMERA_WIDTH 320
 #define CAMERA_HEIGHT 240
-#define SCALE 2
+#define SCALE 1
 
 #include <camera.h>
  

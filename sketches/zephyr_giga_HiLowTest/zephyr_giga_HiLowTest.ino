@@ -13,6 +13,10 @@ extern void allPinTest();
 extern void testForShorts();
 
 //#endif
+
+#undef NUM_DIGITAL_PINS
+#define NUM_DIGITAL_PINS 15
+
 void setup() {
   Serial.begin(115200);
   while (!Serial && millis() < 10000 );

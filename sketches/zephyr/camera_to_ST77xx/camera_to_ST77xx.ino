@@ -6,10 +6,19 @@ Camera cam;
 #include <ST77XX_zephyr.h>
 #include <ST77XX_zephyr_font_Arial.h>
 
+#ifdef ARDUINO_PORTENTA_H7 
+#define TFT_DC   4 
+#define TFT_CS   2  
+#define TFT_RST  3
+#define TFT_SPI  SPI
 
+#else
 #define TFT_CS   10  // CS & DC can use pins 2, 6, 9, 10, 15, 20, 21, 22, 23
 #define TFT_DC    8  //  but certain pairs must NOT be used: 2+10, 6+9, 20+23, 21+22
 #define TFT_RST   9  // RST can use any pin
+#define TFT_SPI  SPI1
+
+#endif
 
 #define CAMERA_WIDTH 480 //320
 #define CAMERA_HEIGHT 320 // 240
@@ -20,7 +29,7 @@ Camera cam;
 //ST7789_zephyr tft = ST7789_zephyr(&SPI, TFT_CS, TFT_DC, TFT_RST);
 
 // For 3.5" or 4.0" TFT with ST7796
-ST7796_zephyr tft = ST7796_zephyr(&SPI1, TFT_CS, TFT_DC, TFT_RST);
+ST7796_zephyr tft = ST7796_zephyr(&TFT_SPI, TFT_CS, TFT_DC, TFT_RST);
 
 void fatal_error(const char *msg) {
   Serial.println(msg);
@@ -40,7 +49,7 @@ void setup() {
   Serial.begin(115200);
   while (!Serial && millis() < 5000) {}
 
-  Serial.println("\n*** start display camera image on ILI9341 ***");
+  Serial.println("\n*** start display camera image on ST77XX ***");
   // Use this initializer if you're using a 1.8" TFT 128x160 displays
   //tft.initR(INITR_BLACKTAB);
 
