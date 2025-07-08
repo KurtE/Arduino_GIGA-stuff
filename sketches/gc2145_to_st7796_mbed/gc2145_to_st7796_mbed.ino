@@ -1,3 +1,6 @@
+#include <SDRAM.h>
+#include <ram_internal.h>
+
 //#define USE_ILI9341
 #ifdef USE_ILI9341
 #include <ILI9341_GIGA_n.h>
@@ -81,6 +84,7 @@ void fatal_error(const char *msg) {
 
 
 void setup() {
+  SDRAM.begin();
   pinMode(LED_BUILTIN, OUTPUT);
   Serial.begin(115200);
   while (!Serial && millis() < 5000) {}
@@ -95,7 +99,7 @@ void setup() {
   tft.init(320, 480);
 #endif
 
-  tft.setRotation(0);
+  tft.setRotation(1);
   tft.fillScreen(RGB565_BLACK);
 #if 1
   delay(500);
@@ -122,20 +126,23 @@ void setup() {
   Serial.println("Camera started");
   delay(1000);
 
-#if 0
+  uint8_t *fb_buf = nullptr;
+#if 1  // to allocate here
   uint32_t buffer_size = cam.frameSize();
+#if 0 // to use malloc
   Serial.print(" Buffer Size:");
   Serial.println(buffer_size);
   Serial.println("Try malloc to allocate buffer");
   Serial.flush();
-  uint8_t *fb_buf = (uint8_t *)malloc(buffer_size + 32);
-#if 0
+  fb_buf = (uint8_t *)malloc(buffer_size + 32);
+#endif  
+#if 1
   if (fb_buf == nullptr) {
     Serial.println("Falled, try SDRAM.malloc");
     fb_buf = (uint8_t *)SDRAM.malloc(buffer_size + 32);
     if (fb_buf == nullptr) {
       Serial.println("*** failed ***");
-      blinkLED();
+      fatal_error("Failed to allocate SDRAM");
     }
   }
 #endif  
