@@ -1,0 +1,10 @@
+mv ST7735_zephyr.cpp ST7735_mbed.cpp
+mv ST7789_zephyr.cpp ST7789_mbed.cpp
+mv ST7796_zephyr.cpp ST7796_mbed.cpp
+mv ST77XX_zephyr.cpp ST77XX_mbed.cpp
+mv ST77XX_zephyr.h ST77XX_mbed.h
+mv ST77XX_zephyr_defines.h ST77XX_mbed_defines.h
+mv ST77XX_zephyr_font_Arial.c ST77XX_mbed_font_Arial.c
+mv ST77XX_zephyr_font_Arial.h ST77XX_mbed_font_Arial.h
+mv ST77XX_zephyr_font_ComicSansMS.c ST77XX_mbed_font_ComicSansMS.c
+mv ST77XX_zephyr_font_ComicSansMS.h ST77XX_mbed_font_ComicSansMS.h
