@@ -136,7 +136,12 @@ void loop() {
 
     return;
   }
-  rgb.on(0, 32, 0);
+  // 
+  // Lets try setting the LED to current color RGB although maybe lesser brightness...
+  rgb.on(((paint_colors[current_color_index] >> 8) & 0xf8) >> 4, 
+            ((paint_colors[current_color_index] >> 5) & 0xfc) >> 4, 
+            ((paint_colors[current_color_index] << 3) & 0xf8) >>4 );
+  //rgb.on(0, 32, 0);
 
   // Retrieve a point
   Serial.print("X = "); Serial.print(points[0].x);
