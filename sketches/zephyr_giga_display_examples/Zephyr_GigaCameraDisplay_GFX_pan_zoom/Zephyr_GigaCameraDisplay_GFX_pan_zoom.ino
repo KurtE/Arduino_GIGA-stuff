@@ -16,8 +16,10 @@ uint16_t color565(uint8_t r, uint8_t g, uint8_t b) {
   return ((r & 0xF8) << 8) | ((g & 0xFC) << 3) | (b >> 3);
 }
 
-#define CAMERA_WIDTH 320
-#define CAMERA_HEIGHT 240
+#define CAMERA_WIDTH 800
+#define CAMERA_HEIGHT 600
+#define CAMERA_VIEW_WIDTH 400
+#define CAMERA_VIEW_HEIGHT 240
 #define SCALE 2
 
 #include <camera.h>
@@ -30,6 +32,12 @@ FrameBuffer fb;
 #ifdef ROTATE_CAMERA_IMAGE
 uint16_t *rotate_buffer = nullptr;
 #endif
+
+struct video_selection vselPan = { VIDEO_BUF_TYPE_OUTPUT, VIDEO_SEL_TGT_CROP, { 0, 0, 0, 0 } };
+struct video_selection vselNativeSize = { VIDEO_BUF_TYPE_OUTPUT, VIDEO_SEL_TGT_NATIVE_SIZE, { 0, 0, 0, 0 } };
+int pan_delta_x = 0;
+
+
 
 
 // The buffer used to rotate and resize the frame
@@ -68,9 +76,16 @@ void setup() {
   Serial.flush();
   //cam.debug(Serial);
 
-  if (!cam.begin(CAMERA_WIDTH, CAMERA_HEIGHT, CAMERA_RGB565, true)) {
+  printk("Before setSnapshotMode call\n");
+  cam.setSnapshotMode(true);
+
+  printk("Before cam.begin call\n");
+  if (!cam.begin(CAMERA_WIDTH, CAMERA_HEIGHT, CAMERA_VIEW_WIDTH, CAMERA_VIEW_HEIGHT, CAMERA_RGB565, true)) {
     fatal_error("Camera begin failed");
   }
+
+
+
   //Serial.println("Before setRotation");
   //Serial.flush();
 
@@ -91,12 +106,32 @@ void setup() {
   Serial.println(SCALE);
   Serial.println("end setup");
   Serial.flush();
+
+  int err;
+  if ((err = cam.getSelection(&vselPan)) == 0) {
+    Serial.print("Crop Rect:(");
+    Serial.print(vselPan.rect.left);
+    Serial.print(",");
+    Serial.print(vselPan.rect.top);
+    Serial.print(") ");
+    Serial.print(vselPan.rect.width);
+    Serial.print("x");
+    Serial.print(vselPan.rect.height);
+  }
+
+  if ((err = cam.getSelection(&vselNativeSize)) == 0) {
+    Serial.print("Crop Rect:(");
+    Serial.print(vselNativeSize.rect.left);
+    Serial.print(",");
+    Serial.print(vselNativeSize.rect.top);
+    Serial.print(") ");
+    Serial.print(vselNativeSize.rect.width);
+    Serial.print("x");
+    Serial.print(vselNativeSize.rect.height);
+  }
+  pan_delta_x = (vselNativeSize.rect.width - vselPan.rect.width) / 4;
 }
 
-inline uint16_t HTONS(uint16_t x) {
-  return ((x >> 8) & 0x00FF) | ((x << 8) & 0xFF00);
-}
-//#define HTONS(x) (((x >> 8) & 0x00FF) | ((x << 8) & 0xFF00))
 
 
 uint32_t display_time_sum = 0;
@@ -104,28 +139,27 @@ uint8_t display_time_count = 0;
 
 void loop() {
 
-  // Grab frame and write to another framebuffer
-  if (cam.grabFrame(fb)) {
-    //Serial.println("Camera frame received");
-    if (Serial.available()) {
-      while (Serial.read() != -1) {}
-      //      cam.printRegs();
-      //MemoryHexDump(Serial, fb.getBuffer(), 1024, true, "Start of Camera Buffer\n");
-      Serial.println("*** Paused ***");
-      while (Serial.read() == -1) {}
-      while (Serial.read() != -1) {}
-    }
+  //Serial.println("Camera frame received");
+  if (Serial.available()) {
+    while (Serial.read() != -1) {}
+    //      cam.printRegs();
+    //MemoryHexDump(Serial, fb.getBuffer(), 1024, true, "Start of Camera Buffer\n");
+    Serial.println("*** Paused ***");
+    while (Serial.read() == -1) {}
+    while (Serial.read() != -1) {}
+  }
 
+  // Grab frame and write to another framebuffer
+  if (cam.grabFrame(fb, 250)) {
     uint16_t *pixels = (uint16_t *)fb.getBuffer();
     elapsedMicros emDisplay;
-       // for (int i = 0; i < CAMERA_WIDTH*CAMERA_HEIGHT; i++) pixels[i] = HTONS(pixels[i]);
 #if defined(SCALE) && SCALE > 1
     // Quick and dirty scale.
-    int yDisplay = (display.height() - (CAMERA_HEIGHT * SCALE)) / 2;
+    int yDisplay = (display.height() - (CAMERA_VIEW_HEIGHT * SCALE)) / 2;
     display.startBuffering();
-    for (int yCamera = 0; yCamera < CAMERA_HEIGHT; yCamera++) {
-      int xDisplay = (display.width() - (CAMERA_WIDTH * SCALE)) / 2;
-      for (int xCamera = 0; xCamera < CAMERA_WIDTH; xCamera++) {
+    for (int yCamera = 0; yCamera < CAMERA_VIEW_HEIGHT; yCamera++) {
+      int xDisplay = (display.width() - (CAMERA_VIEW_WIDTH * SCALE)) / 2;
+      for (int xCamera = 0; xCamera < CAMERA_VIEW_WIDTH; xCamera++) {
         display.fillRect(xDisplay, yDisplay, SCALE, SCALE, *pixels++);
         xDisplay += SCALE;
       }
@@ -133,7 +167,7 @@ void loop() {
     }
     display.endBuffering();
 #else
-    display.drawRGBBitmap((display.width() - CAMERA_WIDTH) / 2, (display.height() - CAMERA_HEIGHT) / 2, pixels, CAMERA_WIDTH, CAMERA_HEIGHT);
+    display.drawRGBBitmap((display.width() - CAMERA_VIEW_WIDTH) / 2, (display.height() - CAMERA_VIEW_HEIGHT) / 2, pixels, CAMERA_VIEW_WIDTH, CAMERA_VIEW_HEIGHT);
 #endif
 
     cam.releaseFrame(fb);
@@ -148,6 +182,21 @@ void loop() {
       display_time_sum = 0;
       display_time_count = 0;
     }
+    if ((vselPan.rect.left == 0) && (pan_delta_x < 0)) pan_delta_x = -pan_delta_x;
+    if ((vselPan.rect.left + vselPan.rect.width) == vselNativeSize.rect.width) pan_delta_x = -pan_delta_x;
+
+    vselPan.rect.left += pan_delta_x;
+    if (cam.setSelection(&vselPan) != 0) {
+      Serial.print("Eror setting Crop Rect:(");
+      Serial.print(vselPan.rect.left);
+      Serial.print(",");
+      Serial.print(vselPan.rect.top);
+      Serial.print(") ");
+      Serial.print(vselPan.rect.width);
+      Serial.print("x");
+      Serial.print(vselPan.rect.height);
+    }
+
 
   } else {
 
