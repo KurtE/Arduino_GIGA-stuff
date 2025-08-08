@@ -78,7 +78,7 @@ void setup() {
 
   printk("Before setSnapshotMode call\n");
   cam.setSnapshotMode(true);
-
+  printk("CONFIG_VIDEO_BUFFER_POOL_NUM_MAX: %u\n", CONFIG_VIDEO_BUFFER_POOL_NUM_MAX);
   printk("Before cam.begin call\n");
   if (!cam.begin(CAMERA_WIDTH, CAMERA_HEIGHT, CAMERA_VIEW_WIDTH, CAMERA_VIEW_HEIGHT, CAMERA_RGB565, true)) {
     fatal_error("Camera begin failed");
@@ -116,11 +116,11 @@ void setup() {
     Serial.print(") ");
     Serial.print(vselPan.rect.width);
     Serial.print("x");
-    Serial.print(vselPan.rect.height);
+    Serial.println(vselPan.rect.height);
   }
 
   if ((err = cam.getSelection(&vselNativeSize)) == 0) {
-    Serial.print("Crop Rect:(");
+    Serial.print("Native Size Rect:(");
     Serial.print(vselNativeSize.rect.left);
     Serial.print(",");
     Serial.print(vselNativeSize.rect.top);
@@ -178,7 +178,7 @@ void loop() {
       Serial.print("Avg display Time: ");
       Serial.print(display_time_sum / display_time_count);
       Serial.print(" fps:");
-      Serial.println(128000000.0 / float(display_time_sum), 2);
+      Serial.println(128000000.0 / double(display_time_sum), 2);
       display_time_sum = 0;
       display_time_count = 0;
     }
