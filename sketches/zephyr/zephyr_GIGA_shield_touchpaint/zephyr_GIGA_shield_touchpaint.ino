@@ -24,7 +24,7 @@ Arduino_GigaDisplayTouch touchDetector;
 
 // Some of our displays appear to have a differnt orieintations of the touch sensor
 // versus the display.
-uint8_t g_touch_rotation = 0; 
+uint8_t g_touch_rotation = 0;
 
 
 GigaDisplayRGB rgb;  //create rgb object
@@ -42,11 +42,12 @@ GigaDisplayRGB rgb;  //create rgb object
 #define BOXSIZE 80
 #define PENRADIUS 5
 int oldcolor, currentcolor;
-static const uint16_t paint_colors[] = {GC9A01A_RED, GC9A01A_YELLOW, GC9A01A_GREEN, GC9A01A_CYAN, GC9A01A_BLUE, GC9A01A_MAGENTA};
-#define COUNT_PAINT_COLORS  (sizeof(paint_colors) / sizeof(paint_colors[0]))
+static const uint16_t paint_colors[] = { GC9A01A_RED, GC9A01A_YELLOW, GC9A01A_GREEN, GC9A01A_CYAN, GC9A01A_BLUE, GC9A01A_MAGENTA };
+#define COUNT_PAINT_COLORS (sizeof(paint_colors) / sizeof(paint_colors[0]))
 uint8_t current_color_index = 0;
 void setup(void) {
-  while (!Serial && millis() < 5000);     // used for leonardo debugging
+  while (!Serial && millis() < 5000)
+    ;  // used for leonardo debugging
 
   Serial.begin(9600);
   Serial.println(F("Touch Paint!"));
@@ -90,7 +91,7 @@ void setup(void) {
   display.startBuffering();
   display.fillScreen(GC9A01A_BLACK);
   for (uint8_t i = 0; i < COUNT_PAINT_COLORS; i++) {
-    display.fillRect(BOXSIZE*i, 0, BOXSIZE, BOXSIZE, paint_colors[i]);
+    display.fillRect(BOXSIZE * i, 0, BOXSIZE, BOXSIZE, paint_colors[i]);
   }
   display.endBuffering();
   // select the current color 'red'
@@ -108,8 +109,8 @@ void convertRawTouchyByRotation(int xRaw, int yRaw, int &touch_x, int &touch_y) 
       break;
     case 1:
       Serial.print("@");
-      touch_x = xRaw; //display.width() - xRaw;
-      touch_y = yRaw; // display.height() - yRaw;
+      touch_x = xRaw;  //display.width() - xRaw;
+      touch_y = yRaw;  // display.height() - yRaw;
       break;
   }
 }
@@ -119,7 +120,11 @@ void loop() {
   uint8_t contacts;
   int touch_x, touch_y;
   GDTpoint_t points[5];
+#ifdef __MBED__
+  contacts = touchDetector.getTouchPoints(points);
+#else
   contacts = touchDetector.getTouchPoints(points, 50);
+#endif
 
   if (contacts == 0) {
     rgb.off();
@@ -132,21 +137,23 @@ void loop() {
         Serial.println(g_touch_rotation);
         while (Serial.read() != -1) {}
       }
-  }
+    }
 
     return;
   }
-  // 
+  //
   // Lets try setting the LED to current color RGB although maybe lesser brightness...
-  rgb.on(((paint_colors[current_color_index] >> 8) & 0xf8) >> 4, 
-            ((paint_colors[current_color_index] >> 5) & 0xfc) >> 4, 
-            ((paint_colors[current_color_index] << 3) & 0xf8) >>4 );
+  rgb.on(((paint_colors[current_color_index] >> 8) & 0xf8) >> 4,
+         ((paint_colors[current_color_index] >> 5) & 0xfc) >> 4,
+         ((paint_colors[current_color_index] << 3) & 0xf8) >> 4);
   //rgb.on(0, 32, 0);
 
   // Retrieve a point
-  Serial.print("X = "); Serial.print(points[0].x);
-  Serial.print("\tY = "); Serial.println(points[0].y);
-  
+  Serial.print("X = ");
+  Serial.print(points[0].x);
+  Serial.print("\tY = ");
+  Serial.println(points[0].y);
+
   // Lets map the the point to the screen rotation.
   convertRawTouchyByRotation(points[0].x, points[0].y, touch_x, touch_y);
 
@@ -173,5 +180,5 @@ void loop() {
     };
   }
 
-  delay(1);  
+  delay(1);
 }
