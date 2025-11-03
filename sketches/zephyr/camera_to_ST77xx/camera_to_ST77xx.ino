@@ -5,23 +5,26 @@ Camera cam;
 #include <SPI.h>
 #include <ST77XX_zephyr.h>
 #include <ST77XX_zephyr_font_Arial.h>
+#include <zephyr/device.h>
+#include <zephyr/drivers/video.h>
+#include <zephyr/drivers/video-controls.h>
 
-#ifdef ARDUINO_PORTENTA_H7 
-#define TFT_DC   4 
-#define TFT_CS   2  
-#define TFT_RST  3
-#define TFT_SPI  SPI
+#ifdef ARDUINO_PORTENTA_H7
+#define TFT_DC 4
+#define TFT_CS 2
+#define TFT_RST 3
+#define TFT_SPI SPI
 
 #else
-#define TFT_CS   10  // CS & DC can use pins 2, 6, 9, 10, 15, 20, 21, 22, 23
-#define TFT_DC    8  //  but certain pairs must NOT be used: 2+10, 6+9, 20+23, 21+22
-#define TFT_RST   9  // RST can use any pin
-#define TFT_SPI  SPI1
+#define TFT_CS 3   // 10  // CS & DC can use pins 2, 6, 9, 10, 15, 20, 21, 22, 23
+#define TFT_DC 4   //8  //  but certain pairs must NOT be used: 2+10, 6+9, 20+23, 21+22
+#define TFT_RST 5  //9  // RST can use any pin
+#define TFT_SPI SPI1
 
 #endif
 
-#define CAMERA_WIDTH 480 //320
-#define CAMERA_HEIGHT 320 // 240
+#define CAMERA_WIDTH 320
+#define CAMERA_HEIGHT 240
 // Use one or the other
 //ST7735_zephyr tft = ST7735_zephyr(&SPI, TFT_CS, TFT_DC, TFT_RST);
 
@@ -84,19 +87,48 @@ void setup() {
   delay(500);
 
   Serial.println("call cam.begin");
+
+  uint8_t camera_count = 1;
+  if ((camera_count = cam.getDTCameraCount()) > 1) {
+    Serial.print("Camera count: ");
+    Serial.println(camera_count);
+    Serial.print("Enter Camera index: ");
+    uint8_t camera_index = 0;
+    int ich;
+    while ((ich = Serial.read()) == -1) {};
+    if (ich >= '0' && ich <= '9') {
+      camera_index = ich - '0';
+    }
+    while ((ich = Serial.read()) != -1) {};
+    cam.setDTCameraIndex(camera_index);
+  }
+  
   if (!cam.begin(CAMERA_WIDTH, CAMERA_HEIGHT, CAMERA_RGB565, true)) {
     fatal_error("Camera begin failed");
   }
   Serial.println("Camera started");
   cam.setVerticalFlip(false);
   cam.setHorizontalMirror(false);
+
+  // Quick and dirty test to see if we can talk to the new stuff in camera.
+#if 0
+  video_selection sel;
+  sel.target = VIDEO_SEL_TGT_NATIVE_SIZE;
+  int ret = video_get_selection(cam.videoDevice(), &sel);
+
+  Serial.print("video_get_selection(TGT_NATIVE_SIZE)");
+  Serial.print(ret);
+  Serial.print(" ");
+  Serial.print(sel.rect.width);
+  Serial.print(" ");
+  Serial.println(sel.rect.height);
+#endif
 }
 
 volatile bool write_rect_complete = false;
 void write_rect_complete_cb(int result) {
   UNUSED(result);
   write_rect_complete = true;
-
 }
 
 bool use_writeRectCB = true;
@@ -112,12 +144,11 @@ void loop() {
     uint32_t start_time = micros();
     if (use_writeRectCB) {
       write_rect_complete = false;
-      tft.writeRectCB(0, 0, CAMERA_WIDTH, CAMERA_HEIGHT, (const uint16_t*)fb.getBuffer(), &write_rect_complete_cb);
+      tft.writeRectCB(0, 0, CAMERA_WIDTH, CAMERA_HEIGHT, (const uint16_t *)fb.getBuffer(), &write_rect_complete_cb);
       while (!write_rect_complete) delay(1);
-    } else {
-      tft.writeRect(0, 0, CAMERA_WIDTH, CAMERA_HEIGHT, (const uint16_t*)fb.getBuffer());
+      tft.writeRect(0, 0, CAMERA_WIDTH, CAMERA_HEIGHT, (const uint16_t *)fb.getBuffer());
     }
-    Serial.println(micros()-start_time);
+    Serial.println(micros() - start_time);
     //tft.writeSubImageRectBytesReversed(0, 0, 320, 240, 0, 0, 320, 240, (const uint16_t*)fb.getBuffer());
     //tft.writeSubImageRect(0, 0, 320, 240, 0, 0, 320, 240, (const uint16_t*)fb.getBuffer());
     cam.releaseFrame(fb);

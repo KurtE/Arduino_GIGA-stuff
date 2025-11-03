@@ -11,9 +11,9 @@ LOG_MODULE_REGISTER(main, LOG_LEVEL_INF);
 #include <zephyr/timing/timing.h>
 
 //#define BUFFER_SIZE (64 * 1024 - 1)
-//#define BUFFER_SIZE (128 * 1024)
+#define BUFFER_SIZE (128 * 1024)
 #define MAX_DMA_BLOCK_SIZE (65536 - 32)
-#define BUFFER_SIZE (320*240*2)
+//#define BUFFER_SIZE (320*240*2)
 
 //#define USE_STATIC_BUFFERS
 #ifdef USE_STATIC_BUFFERS

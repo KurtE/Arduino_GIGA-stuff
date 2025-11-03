@@ -1,5 +1,5 @@
 #include "Arduino.h"
-#include "Arduino_Giga_display.h"
+#include "Arduino_GigaDisplay.h"
 
 Display display;
 

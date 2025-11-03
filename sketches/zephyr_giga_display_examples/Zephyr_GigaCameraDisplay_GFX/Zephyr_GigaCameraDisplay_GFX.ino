@@ -1,6 +1,10 @@
 #include <elapsedMillis.h>
 
 #include "Arduino_GigaDisplay_GFX.h"
+#include "GigaDisplayRGB.h"
+#include "Arduino_GigaDisplayTouch.h"
+#include "Arduino_GigaDisplay.h"
+
 #define GC9A01A_CYAN 0x07FF
 #define GC9A01A_RED 0xf800
 #define GC9A01A_BLUE 0x001F
@@ -16,8 +20,16 @@ uint16_t color565(uint8_t r, uint8_t g, uint8_t b) {
   return ((r & 0xF8) << 8) | ((g & 0xFC) << 3) | (b >> 3);
 }
 
+#define USE_HM01B0
+#define CAMERA_WIDTH 326
+#define CAMERA_HEIGHT 244
+#define CAMERA_FORMAT CAMERA_GRAYSCALE_4
+#ifdef USE_HM01B0
+#else
 #define CAMERA_WIDTH 320
 #define CAMERA_HEIGHT 240
+#define CAMERA_FORMAT CAMERA_RGB565
+#endif
 #define SCALE 2
 
 #include <camera.h>
@@ -68,16 +80,22 @@ void setup() {
   Serial.flush();
   //cam.debug(Serial);
 
-  if (!cam.begin(CAMERA_WIDTH, CAMERA_HEIGHT, CAMERA_RGB565, true)) {
+  display.begin();
+  elapsedMicros em;
+  display.setRotation(1);
+  display.fillScreen(GC9A01A_BLUE);
+  delay(250);
+  display.fillScreen(GC9A01A_RED);
+  delay(250);
+  display.fillScreen(GC9A01A_GREEN);
+  delay(250);
+
+  if (!cam.begin(CAMERA_WIDTH, CAMERA_HEIGHT, CAMERA_FORMAT, true)) {
     fatal_error("Camera begin failed");
   }
   //Serial.println("Before setRotation");
   //Serial.flush();
 
-  display.begin();
-  elapsedMicros em;
-  display.setRotation(1);
-  display.fillScreen(GC9A01A_BLUE);
   Serial.println(em, DEC);
   Serial.print("Camera Width: ");
   Serial.print(CAMERA_WIDTH);
@@ -102,6 +120,8 @@ inline uint16_t HTONS(uint16_t x) {
 uint32_t display_time_sum = 0;
 uint8_t display_time_count = 0;
 
+
+
 void loop() {
 
   // Grab frame and write to another framebuffer
@@ -118,7 +138,7 @@ void loop() {
 
     uint16_t *pixels = (uint16_t *)fb.getBuffer();
     elapsedMicros emDisplay;
-       // for (int i = 0; i < CAMERA_WIDTH*CAMERA_HEIGHT; i++) pixels[i] = HTONS(pixels[i]);
+    // for (int i = 0; i < CAMERA_WIDTH*CAMERA_HEIGHT; i++) pixels[i] = HTONS(pixels[i]);
 #if defined(SCALE) && SCALE > 1
     // Quick and dirty scale.
     int yDisplay = (display.height() - (CAMERA_HEIGHT * SCALE)) / 2;
@@ -126,7 +146,13 @@ void loop() {
     for (int yCamera = 0; yCamera < CAMERA_HEIGHT; yCamera++) {
       int xDisplay = (display.width() - (CAMERA_WIDTH * SCALE)) / 2;
       for (int xCamera = 0; xCamera < CAMERA_WIDTH; xCamera++) {
-        display.fillRect(xDisplay, yDisplay, SCALE, SCALE, *pixels++);
+        uint16_t pixel = *pixels++;
+#ifdef CAMERA_GRAYSCALE44
+        uint8_t gray_color = (pixel & 0x0f) | ((pixel >> 4) & 0xf0);
+        //uint8_t gray_color = ((pixel & 0x0f) << 4) | ((pixel >> 8) & 0x0f);
+        pixel = color565(gray_color, gray_color, gray_color);
+#endif        
+        display.fillRect(xDisplay, yDisplay, SCALE, SCALE, pixel);
         xDisplay += SCALE;
       }
       yDisplay += SCALE;

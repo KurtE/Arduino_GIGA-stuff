@@ -54,7 +54,7 @@
 #include "ST77XX_zephyr.h"
 #include <SPI.h>
 #include <api/itoa.h>
-
+#include <zephyr/kernel.h>
 
 #define WIDTH _screenWidth
 #define HEIGHT _screenHeight
@@ -444,6 +444,7 @@ void ST77XX_zephyr::fillRect(int16_t x, int16_t y, int16_t w, int16_t h,
   }
   // printf("\tfillRect - end\n");
 }
+
 
 // fillRectVGradient	- fills area with vertical gradient
 void ST77XX_zephyr::fillRectVGradient(int16_t x, int16_t y, int16_t w, int16_t h,

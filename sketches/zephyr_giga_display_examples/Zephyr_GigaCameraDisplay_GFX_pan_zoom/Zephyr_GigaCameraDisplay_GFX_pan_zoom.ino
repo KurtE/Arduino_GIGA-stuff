@@ -36,7 +36,7 @@ uint16_t *rotate_buffer = nullptr;
 struct video_selection vselPan = { VIDEO_BUF_TYPE_OUTPUT, VIDEO_SEL_TGT_CROP, { 0, 0, 0, 0 } };
 struct video_selection vselNativeSize = { VIDEO_BUF_TYPE_OUTPUT, VIDEO_SEL_TGT_NATIVE_SIZE, { 0, 0, 0, 0 } };
 int pan_delta_x = 0;
-
+bool pan_enable = true;
 
 
 
@@ -133,25 +133,37 @@ void setup() {
 }
 
 
-
+uint32_t capture_time_sum = 0;
 uint32_t display_time_sum = 0;
 uint8_t display_time_count = 0;
+uint32_t capture_error_count = 0;
 
 void loop() {
 
   //Serial.println("Camera frame received");
   if (Serial.available()) {
+    int ich;
     while (Serial.read() != -1) {}
     //      cam.printRegs();
     //MemoryHexDump(Serial, fb.getBuffer(), 1024, true, "Start of Camera Buffer\n");
     Serial.println("*** Paused ***");
-    while (Serial.read() == -1) {}
-    while (Serial.read() != -1) {}
+    while ((ich = Serial.read()) == -1){}
+      while (Serial.read() != -1) {}
+    if (ich == 'p') {
+      pan_enable = !pan_enable;
+      if (pan_enable) Serial.println("** Panning enabled **");
+      else Serial.println("** Panning disabled **");
+    }
   }
 
+
   // Grab frame and write to another framebuffer
-  if (cam.grabFrame(fb, 250)) {
+  elapsedMicros emCamera;
+  bool fOK = cam.grabFrame(fb, 250);
+  if (fOK) {
+    capture_time_sum += emCamera;
     uint16_t *pixels = (uint16_t *)fb.getBuffer();
+
     elapsedMicros emDisplay;
 #if defined(SCALE) && SCALE > 1
     // Quick and dirty scale.
@@ -176,30 +188,38 @@ void loop() {
     display_time_count++;
     if (display_time_count == 128) {
       Serial.print("Avg display Time: ");
+      Serial.print(capture_time_sum / display_time_count);
+      Serial.print(" Avg capture time: ");
       Serial.print(display_time_sum / display_time_count);
+      Serial.print(" capture errors:");
+      Serial.print(capture_error_count);
       Serial.print(" fps:");
-      Serial.println(128000000.0 / double(display_time_sum), 2);
+      Serial.println(128000000.0 / double(display_time_sum + capture_time_sum), 2);
       display_time_sum = 0;
+      capture_time_sum = 0;
       display_time_count = 0;
-    }
-    if ((vselPan.rect.left == 0) && (pan_delta_x < 0)) pan_delta_x = -pan_delta_x;
-    if ((vselPan.rect.left + vselPan.rect.width) == vselNativeSize.rect.width) pan_delta_x = -pan_delta_x;
-
-    vselPan.rect.left += pan_delta_x;
-    if (cam.setSelection(&vselPan) != 0) {
-      Serial.print("Eror setting Crop Rect:(");
-      Serial.print(vselPan.rect.left);
-      Serial.print(",");
-      Serial.print(vselPan.rect.top);
-      Serial.print(") ");
-      Serial.print(vselPan.rect.width);
-      Serial.print("x");
-      Serial.print(vselPan.rect.height);
+      capture_error_count = 0;
     }
 
+    if (pan_enable) {
+      if ((vselPan.rect.left == 0) && (pan_delta_x < 0)) pan_delta_x = -pan_delta_x;
+      if ((vselPan.rect.left + vselPan.rect.width) == vselNativeSize.rect.width) pan_delta_x = -pan_delta_x;
+
+      vselPan.rect.left += pan_delta_x;
+      if (cam.setSelection(&vselPan) != 0) {
+        Serial.print("Eror setting Crop Rect:(");
+        Serial.print(vselPan.rect.left);
+        Serial.print(",");
+        Serial.print(vselPan.rect.top);
+        Serial.print(") ");
+        Serial.print(vselPan.rect.width);
+        Serial.print("x");
+        Serial.print(vselPan.rect.height);
+      }
+    }
 
   } else {
-
+    capture_error_count++;
     digitalWrite(LED_BUILTIN, digitalRead(LED_BUILTIN) ? LOW : HIGH);
   }
   delay(50);

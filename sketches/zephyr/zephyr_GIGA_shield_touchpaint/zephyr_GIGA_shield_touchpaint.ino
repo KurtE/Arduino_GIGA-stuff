@@ -120,11 +120,7 @@ void loop() {
   uint8_t contacts;
   int touch_x, touch_y;
   GDTpoint_t points[5];
-#ifdef __MBED__
   contacts = touchDetector.getTouchPoints(points);
-#else
-  contacts = touchDetector.getTouchPoints(points, 50);
-#endif
 
   if (contacts == 0) {
     rgb.off();

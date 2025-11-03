@@ -15,9 +15,12 @@ Camera cam;
 #endif
 ILI9341_GIGA_n tft(&SPI, TFT_CS, TFT_DC, TFT_RST);
 #else
-#define TFT_DC 9
-#define TFT_RST 8
-#define TFT_CS 10
+#define TFT_DC 5
+#define TFT_RST 4
+#define TFT_CS 3
+//#define TFT_DC 8
+//#define TFT_RST 9
+//#define TFT_CS 7
 ILI9341_GIGA_n tft(&SPI1, TFT_CS, TFT_DC, TFT_RST);
 #endif
 
