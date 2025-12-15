@@ -169,7 +169,15 @@ public:
   void drawPixel(int16_t x, int16_t y, uint16_t color);
   void drawFastVLine(int16_t x, int16_t y, int16_t h, uint16_t color);
   void drawFastHLine(int16_t x, int16_t y, int16_t w, uint16_t color);
+  
+  // Several variants of fillRect
   void fillRect(int16_t x, int16_t y, int16_t w, int16_t h, uint16_t color);
+
+  // use only Arduino SPI functions.
+  void fillRect_SPI_transfer(int16_t x, int16_t y, int16_t w, int16_t h, uint16_t color);
+  void fillRect_SPI_transfer16(int16_t x, int16_t y, int16_t w, int16_t h, uint16_t color);
+  void fillRect_SPI_transfer_buf(int16_t x, int16_t y, int16_t w, int16_t h, uint16_t color);
+  void fillRect_SPI_transfer_txbuf(int16_t x, int16_t y, int16_t w, int16_t h, uint16_t color);
 
   void fillRectHGradient(int16_t x, int16_t y, int16_t w, int16_t h,
                          uint16_t color1, uint16_t color2);
@@ -242,6 +250,12 @@ public:
     ((ST77XX_zephyr *)data)->process_spi_callback(dev, result);
   }
   void (*_write_rect_cb)(int result) = nullptr;
+
+  // use only Arduino SPI functions.
+  void writeRect_SPI_transfer(int16_t x, int16_t y, int16_t w, int16_t h, const uint16_t *pcolors);
+  void writeRect_SPI_transfer16(int16_t x, int16_t y, int16_t w, int16_t h, const uint16_t *pcolors);
+  void writeRect_SPI_transfer_buf(int16_t x, int16_t y, int16_t w, int16_t h, const uint16_t *pcolors);
+  void writeRect_SPI_transfer_txbuf(int16_t x, int16_t y, int16_t w, int16_t h, const uint16_t *pcolors);
 
 
   // The write sub-rect is like the writeRect, except we only want to output a portion of it, so it needs to

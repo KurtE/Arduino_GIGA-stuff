@@ -445,6 +445,68 @@ void ST77XX_zephyr::fillRect(int16_t x, int16_t y, int16_t w, int16_t h,
   // printf("\tfillRect - end\n");
 }
 
+// SPI Transfer functions only.
+void ST77XX_zephyr::fillRect_SPI_transfer(int16_t x, int16_t y, int16_t w, int16_t h,
+                           uint16_t color) {
+  beginSPITransaction();
+  setAddr(x, y, x + w - 1, y + h - 1);
+  writecommand_cont(ST77XX_RAMWR);
+  setDataMode();
+
+  for (y = h; y > 0; y--) {
+    for (uint16_t i = 0; i < w; i++) {
+      _pspi->transfer(color>>8);
+      _pspi->transfer(color & 0xff);
+    }
+  }
+  endSPITransaction();
+}
+
+void ST77XX_zephyr::fillRect_SPI_transfer16(int16_t x, int16_t y, int16_t w, int16_t h,
+                           uint16_t color) {
+  beginSPITransaction();
+  setAddr(x, y, x + w - 1, y + h - 1);
+  writecommand_cont(ST77XX_RAMWR);
+  setDataMode();
+
+  for (y = h; y > 0; y--) {
+    for (uint16_t i = 0; i < w; i++) {
+      _pspi->transfer16(color);
+    }
+  }
+  endSPITransaction();
+}
+
+void ST77XX_zephyr::fillRect_SPI_transfer_buf(int16_t x, int16_t y, int16_t w, int16_t h,
+                           uint16_t color) {
+  beginSPITransaction();
+  setAddr(x, y, x + w - 1, y + h - 1);
+  writecommand_cont(ST77XX_RAMWR);
+  setDataMode();
+
+  uint16_t color_swapped = (color >> 8) | ((color & 0xff) << 8);
+  for (y = h; y > 0; y--) {
+    for (uint16_t i = 0; i < w; i++) s_row_buff[i] = color_swapped;
+    _pspi->transfer(s_row_buff, w * 2);
+  }
+  endSPITransaction();
+}
+
+void ST77XX_zephyr::fillRect_SPI_transfer_txbuf(int16_t x, int16_t y, int16_t w, int16_t h,
+                           uint16_t color) {
+  beginSPITransaction();
+  setAddr(x, y, x + w - 1, y + h - 1);
+  writecommand_cont(ST77XX_RAMWR);
+  setDataMode();
+
+  uint16_t color_swapped = (color >> 8) | ((color & 0xff) << 8);
+  for (uint16_t i = 0; i < w; i++) s_row_buff[i] = color_swapped;
+  for (y = h; y > 0; y--) {
+    ((ZephyrSPI *)_pspi)->transfer(s_row_buff, nullptr, w * 2);
+  }
+  endSPITransaction();
+}
+
 
 // fillRectVGradient	- fills area with vertical gradient
 void ST77XX_zephyr::fillRectVGradient(int16_t x, int16_t y, int16_t w, int16_t h,
@@ -935,7 +997,7 @@ void ST77XX_zephyr::writeRect(int16_t x, int16_t y, int16_t w, int16_t h,
     #endif
   } else {
     // data us contiguious so output in one operation
-    #if 0
+    #if 1
     struct spi_buf tx_buf = { .buf = (void*)pcolors, .len = (size_t)(w * h * 2 )};
     const struct spi_buf_set tx_buf_set = { .buffers = &tx_buf, .count = 1 };
     spi_transceive(_spi_dev, &_config16, &tx_buf_set, nullptr);
@@ -949,6 +1011,61 @@ void ST77XX_zephyr::writeRect(int16_t x, int16_t y, int16_t w, int16_t h,
 
     #endif
   }
+  endSPITransaction();
+}
+
+void ST77XX_zephyr::writeRect_SPI_transfer(int16_t x, int16_t y, int16_t w, int16_t h, const uint16_t *pcolors) {
+  beginSPITransaction();
+  setAddr(x, y, x + w - 1, y + h - 1);
+  writecommand_cont(ST77XX_RAMWR);
+  setDataMode();
+  uint32_t len = w * h;
+  while (len) {
+    _pspi->transfer(*pcolors >> 8);
+    _pspi->transfer(*pcolors++ & 0xff);
+    len --;
+  }
+  endSPITransaction();
+}
+
+
+void ST77XX_zephyr::writeRect_SPI_transfer16(int16_t x, int16_t y, int16_t w, int16_t h, const uint16_t *pcolors) {
+  beginSPITransaction();
+  setAddr(x, y, x + w - 1, y + h - 1);
+  writecommand_cont(ST77XX_RAMWR);
+  setDataMode();
+  uint32_t len = w * h;
+  while (len) {
+    _pspi->transfer16(*pcolors++);
+    len --;
+  }
+  endSPITransaction();
+}
+
+
+void ST77XX_zephyr::writeRect_SPI_transfer_buf(int16_t x, int16_t y, int16_t w, int16_t h, const uint16_t *pcolors) {
+  beginSPITransaction();
+  setAddr(x, y, x + w - 1, y + h - 1);
+  writecommand_cont(ST77XX_RAMWR);
+  setDataMode();
+
+  for (y = h; y > 0; y--) {
+
+    for (uint16_t i = 0; i < w; i++) {
+      uint16_t color_swapped = (*pcolors >> 8) | ((*pcolors & 0xff) << 8);
+      pcolors++;
+      s_row_buff[i] = color_swapped;
+    }
+    _pspi->transfer(s_row_buff, w * 2);
+  }
+  endSPITransaction();
+}
+void ST77XX_zephyr::writeRect_SPI_transfer_txbuf(int16_t x, int16_t y, int16_t w, int16_t h, const uint16_t *pcolors) {
+  beginSPITransaction();
+  setAddr(x, y, x + w - 1, y + h - 1);
+  writecommand_cont(ST77XX_RAMWR);
+  setDataMode();
+  ((ZephyrSPI *)_pspi)->transfer16(pcolors, nullptr, w * h);
   endSPITransaction();
 }
 

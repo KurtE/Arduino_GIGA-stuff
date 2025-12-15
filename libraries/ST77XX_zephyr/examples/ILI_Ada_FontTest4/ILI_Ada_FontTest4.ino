@@ -1,4 +1,4 @@
-//#define USE_FULL_FONT_LIST
+#define USE_FULL_FONT_LIST
 #include <elapsedMillis.h>
 
 #include <Adafruit_GFX.h>
