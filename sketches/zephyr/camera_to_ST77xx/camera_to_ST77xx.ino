@@ -73,6 +73,7 @@ void setup() {
   // OR use this initializer (uncomment) if using a 2.0" 320x240 TFT:
   //tft.init(240, 320);           // Init ST7789 320x240
   tft.init(320, 480);
+  tft.invertDisplay(true);
 
   tft.setRotation(1);
   tft.fillScreen(ST77XX_BLACK);
