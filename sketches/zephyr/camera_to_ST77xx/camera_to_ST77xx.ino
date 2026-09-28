@@ -1,5 +1,6 @@
 #include <ST77XX_zephyr.h>
 #include "camera.h"
+#include <Arduino_zephyr_toolbox.h>
 
 Camera cam;
 #include <SPI.h>
@@ -111,7 +112,8 @@ void setup() {
   Serial.println("Camera started");
   //cam.setVerticalFlip(false);
   //cam.setHorizontalMirror(false);
-
+  // DEBUG - print all of the GPIO registers
+  print_all_gpio_regs();
   // Quick and dirty test to see if we can talk to the new stuff in camera.
 #if 0
   video_selection sel;

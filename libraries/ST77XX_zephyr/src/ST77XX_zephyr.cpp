@@ -103,7 +103,7 @@ int ExtendendTransferSPI::transfer16(const void *txBuf, void *rxBuf, size_t coun
 
 
 uint16_t ST77XX_zephyr::s_row_buff[480]; // 
-
+bool ST77XX_zephyr::s_use_config16 = true;
 
 // Constructor when using hardware ILI9241_KINETISK__pspi->  Faster, but must
 // use SPI pins
@@ -457,13 +457,34 @@ void ST77XX_zephyr::fillRect(int16_t x, int16_t y, int16_t w, int16_t h,
     uint16_t array_fill_count = min(count_pixels, sizeof(s_row_buff)/sizeof(s_row_buff[0]));
     struct spi_buf tx_buf = { .buf = (void*)s_row_buff, .len = (size_t)(array_fill_count * 2 )};
     const struct spi_buf_set tx_buf_set = { .buffers = &tx_buf, .count = 1 };
-    for (uint16_t i = 0; i < array_fill_count; i++) s_row_buff[i] = color;
-    while (count_pixels) {
-      spi_transceive(_spi_dev, &_config16, &tx_buf_set, nullptr);
-      count_pixels -= array_fill_count;
-      if (count_pixels < array_fill_count) {
-        array_fill_count = count_pixels;
-        tx_buf.len = (size_t)(array_fill_count * 2 );
+
+    if (s_use_config16) {
+      for (uint16_t i = 0; i < array_fill_count; i++) s_row_buff[i] = color;
+      while (count_pixels) {
+        if (spi_transceive(_spi_dev, &_config16, &tx_buf_set, nullptr) < 0) {
+          s_use_config16 = false;
+          break;
+        }
+        count_pixels -= array_fill_count;
+        if (count_pixels < array_fill_count) {
+          array_fill_count = count_pixels;
+          tx_buf.len = (size_t)(array_fill_count * 2 );
+        }
+      }
+    }
+    if (!s_use_config16) {
+      uint16_t reversed_color = (color >> 8) | (color & 0xff) << 8;
+      for (uint16_t i = 0; i < array_fill_count; i++) s_row_buff[i] = reversed_color;
+      while (count_pixels) {
+        if (spi_transceive(_spi_dev, &_config, &tx_buf_set, nullptr) < 0) {
+          s_use_config16 = false;
+          break;
+        }
+        count_pixels -= array_fill_count;
+        if (count_pixels < array_fill_count) {
+          array_fill_count = count_pixels;
+          tx_buf.len = (size_t)(array_fill_count * 2 );
+        }
       }
     }
 
@@ -487,8 +508,8 @@ void ST77XX_zephyr::fillRect(int16_t x, int16_t y, int16_t w, int16_t h,
 }
 
 static void spi_fillrect_callback (const struct device *dev, int result, void *data) {
-  UNUSED(dev);
-  UNUSED(result);
+  ARG_UNUSED(dev);
+  ARG_UNUSED(result);
   *((volatile bool *)data) = true;
 }
 
@@ -818,8 +839,8 @@ void ST77XX_zephyr::setRotation(uint8_t m) {
 }
 
 void ST77XX_zephyr::setScrollMargins(uint16_t top, uint16_t bottom) {
-  UNUSED(top);
-  UNUSED(bottom);
+  ARG_UNUSED(top);
+  ARG_UNUSED(bottom);
 #ifdef LATER
   // TFA+VSA+BFA must equal 320
   if (top + bottom > _height) return;
@@ -836,7 +857,7 @@ void ST77XX_zephyr::setScrollMargins(uint16_t top, uint16_t bottom) {
 
 
 void ST77XX_zephyr::setScroll(uint16_t offset) {
-  UNUSED(offset);
+  ARG_UNUSED(offset);
 #ifdef LATER
   beginSPITransaction();
   writecommand_cont(ST77XX_VSCRSADD);
@@ -1092,8 +1113,8 @@ void ST77XX_zephyr::writeRect(int16_t x, int16_t y, int16_t w, int16_t h,
 }
 
 static void spi_writerect_callback (const struct device *dev, int result, void *data) {
-  UNUSED(dev);
-  UNUSED(result);
+  ARG_UNUSED(dev);
+  ARG_UNUSED(result);
   *((volatile bool *)data) = true;
 }
 
@@ -1189,7 +1210,7 @@ void ST77XX_zephyr::writeRectCB(int16_t x, int16_t y, int16_t w, int16_t h,
 
 void ST77XX_zephyr::process_spi_callback(const struct device *dev, int result) {
   // end spi transaction
-  UNUSED(dev);
+  ARG_UNUSED(dev);
   endSPITransaction();
 
   if (_write_rect_cb) (*_write_rect_cb)(result);
@@ -1201,7 +1222,7 @@ void ST77XX_zephyr::process_spi_callback(const struct device *dev, int result) {
 void ST77XX_zephyr::writeSubImageRect(int16_t x, int16_t y, int16_t w, int16_t h, 
   int16_t image_offset_x, int16_t image_offset_y, int16_t image_width, int16_t image_height, const uint16_t *pcolors)
 {
-  UNUSED(image_height);
+  ARG_UNUSED(image_height);
   if (x == CENTER) x = (_width - w) / 2;
   if (y == CENTER) y = (_height - h) / 2;
   x+=_originx;
@@ -1273,7 +1294,7 @@ void ST77XX_zephyr::writeSubImageRect(int16_t x, int16_t y, int16_t w, int16_t h
 void ST77XX_zephyr::writeSubImageRectBytesReversed(int16_t x, int16_t y, int16_t w, int16_t h, 
   int16_t image_offset_x, int16_t image_offset_y, int16_t image_width, int16_t image_height, const uint16_t *pcolors)
 {
-  UNUSED(image_height);
+  ARG_UNUSED(image_height);
   if (x == CENTER) x = (_width - w) / 2;
   if (y == CENTER) y = (_height - h) / 2;
   x+=_originx;
@@ -1652,6 +1673,9 @@ void ST77XX_zephyr::common_init(const uint8_t *cmd_list) {
   _config16.frequency = _SPI_CLOCK;
   _config16.operation = SPI_WORD_SET(16) | SPI_TRANSFER_MSB;
 
+  memset((void *)&_config, 0, sizeof(_config));
+  _config.frequency = _SPI_CLOCK;
+  _config.operation = SPI_WORD_SET(8) | SPI_TRANSFER_MSB;
 
   pinMode(_cs, OUTPUT);
   digitalWrite(_cs, HIGH);

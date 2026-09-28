@@ -472,7 +472,7 @@ public:
 
   SPIClass *_pspi = nullptr;
   const struct device *_spi_dev = nullptr;
-  struct spi_config _config16;
+  struct spi_config _config16, _config;
   SPISettings _spiSettings;
 
   uint8_t _spi_num = 0;         // Which buss is this spi on?
@@ -865,6 +865,7 @@ public:
 
   // BUGBUG:: Maybe better way later
   static uint16_t s_row_buff[480]; // 
+  static bool s_use_config16;
 
 
 };

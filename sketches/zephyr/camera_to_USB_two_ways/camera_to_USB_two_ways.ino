@@ -23,7 +23,7 @@ void fatal_error(const char *msg) {
 void setup(void) {
   Serial.begin(115200);
   while(!Serial && millis() < 4000) {}
-  if (!cam.begin(320, 240, CAMERA_RGB565)) {
+  if (!cam.begin(320, 240, CAMERA_RGB565, false)) {
     fatal_error("Camera begin failed");
   }
   cam.setVerticalFlip(false);
